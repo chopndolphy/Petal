@@ -9,7 +9,7 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
-
+#include "dsp/PitchShifter.h"
 //==============================================================================
 /**
 */
@@ -54,6 +54,8 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
 private:
+    PitchShifter ps;
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PetalAudioProcessor)
 };

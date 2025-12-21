@@ -85,6 +85,7 @@ void PetalAudioProcessor::changeProgramName (int index, const juce::String& newN
 //==============================================================================
 void PetalAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    ps.prepareToPlay(sampleRate, samplesPerBlock);
 }
 
 void PetalAudioProcessor::releaseResources()
@@ -114,6 +115,10 @@ bool PetalAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
 
 void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+    
+    ps.setAttributes(2.0, 200.0f, 0.2f);
+
+
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
@@ -124,10 +129,8 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
         auto* channelData = buffer.getWritePointer(channel);
-        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
-        {
-            channelData[sample] *= 0.5;
-        }
+
+        ps.processBlock(buffer);
     }
 }
 
