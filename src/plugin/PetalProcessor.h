@@ -4,7 +4,17 @@
 class PetalProcessor
 {
 public: 
-    void setSampleRate(double sampleRate) {}
+    void prepareToPlay(double sampleRate, int maximumBlockSize) 
+    {
+        juce::dsp::ProcessSpec spec;
+        spec.sampleRate = sampleRate;
+        spec.maximumBlockSize = maximumBlockSize;
+        spec.numChannels = 2;
+
+        dl.prepare(spec);
+        dl.setMaximumDelayInSamples((int)(sampleRate * 10));
+        dl.reset();
+    }
 
 
 
@@ -38,6 +48,7 @@ public:
 private: 
     struct tapAttributes 
     { 
+        bool isLeft = true;
         bool isActive = true;
         int syncTime;
         float freeTime;

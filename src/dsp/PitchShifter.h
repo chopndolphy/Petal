@@ -3,11 +3,27 @@
 class PitchShifter
 {
 public: 
+    PitchShifter()
+    {
+        phase.fill(0.0);
+        lastPhase.fill(0.0);
+    }
+
     void prepareToPlay(double sampleRate, int samplesPerBlock) 
     {
         this->sampleRate = sampleRate;
-        dl.setMaximumDelayInSamples(sampleRate * 2);
-        
+
+        juce::dsp::ProcessSpec spec;
+        spec.sampleRate = sampleRate;
+        spec.numChannels = 2;
+        spec.maximumBlockSize = samplesPerBlock;
+
+        dl.prepare(spec);
+        dl.setMaximumDelayInSamples(static_cast<int>(sampleRate * 2));
+        dl.reset();
+
+        phase.fill(0.0);
+        lastPhase.fill(0.0);
     }
 
     void setAttributes(float shiftAmount, float windowSizeInMilliseconds, float jitterAmount) 
@@ -29,51 +45,42 @@ public:
         double rate = (1.0 - shiftAmount) * 1000.0/windowSizeInMilliseconds;
 
         double phraseIncr = rate/sampleRate;
-        double offsetAmount = 0.25;
 
         for (int i = 0; i < 4; i++){
-            phase[i] = phase[i] + phraseIncr + (offsetAmount * i);
+            phase[i] += phraseIncr;
+
+            if (lastPhase[i] > phase[i])
+            {
+                float jitter = std::abs(rd[i].nextFloat()) * jitterAmount;
+                phase[i] += jitter;
+            }
+
             if (phase[i] >= 1.0) { phase[i] -= 1.0; }
+            lastPhase[i] = phase[i];
         }
     }
 
     void processBlock(juce::AudioBuffer<float>& buffer)
     {
-        float windowSizeInSamples = sampleRate / windowSizeInHertz;
-        
-        for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
-        {
-            auto bufferData = buffer.getReadPointer(channel);
-            auto data = buffer.getWritePointer(channel);
-            
+        for (int channel = 0; channel < buffer.getNumChannels(); ++channel){  
+
+            auto readData = buffer.getReadPointer(channel);
+            auto writeData = buffer.getWritePointer(channel);
+
             for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
             {
-                advancePhase();
-                float out = 0.0f; 
-                
-                for (int i = 0; i < 4; i++)
-                {                    
-                    float delayTime = phase[i];
-                    if (lastPhase[i] > phase[i]) 
-                    {
-                        float random = std::abs(rd[i].nextFloat()) * jitterAmount;
-                        delayTime += random * windowSizeInSamples;
-                    }
-                    
-                    dl.pushSample(0, bufferData[sample]);
-                    out += dl.popSample(0, delayTime);
-                    
-                    lastPhase[i] = phase[i];    
-                }
-                
-                data[sample] = out * 0.25f;
+                float delaySumData = 0.0f;
+                dl.pushSample(channel, readData[sample]);
+                float data = dl.popSample(channel, sampleRate);
+
+                writeData[sample] = (data + readData[sample]) * 0.5f;
+
             }
         }
     }
 
 private: 
     double sampleRate;
-
     std::array<double, 4> phase;
     std::array<double, 4> lastPhase;
 

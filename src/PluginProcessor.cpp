@@ -126,12 +126,13 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer(channel);
 
-        ps.processBlock(buffer);
-    }
+      //  auto* channelData = buffer.getWritePointer(0);
+
+
+        ps.processBlock(buffer);  
+    
+    
 }
 
 //==============================================================================
@@ -152,6 +153,7 @@ void PetalAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 
 void PetalAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
+
 }
 
 //==============================================================================
