@@ -72,7 +72,7 @@ public:
                 dl4.pushSample(0, tank1A);
                 float tank2B = dl4.popSample(0, 500) * 0.5f;
 
-                buffer.setSample(channel, sample, tank2B/2);
+                buffer.addSample(channel, sample, tank2B/2);
             }
         }
     }
