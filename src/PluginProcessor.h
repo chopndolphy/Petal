@@ -10,6 +10,8 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "dsp/PitchShifter.h"
+#include "dsp/reverb/Reverb.h"
+
 //==============================================================================
 /**
 */
@@ -55,7 +57,7 @@ public:
 
 private:
     PitchShifter ps;
-
+    MyVerb rv;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PetalAudioProcessor)
 };

@@ -43,25 +43,21 @@ public:
     void advancePhase()
     {
         double rate = (1.0 - shiftAmount) * 1000.0/windowSizeInMilliseconds;
-
         double phraseIncr = rate/sampleRate;
+        double phaseOffset = 0.25;
 
         for (int i = 0; i < 4; i++){
-            phase[i] += phraseIncr;
-
-            if (lastPhase[i] > phase[i])
-            {
-                float jitter = std::abs(rd[i].nextFloat()) * jitterAmount;
-                phase[i] += jitter;
-            }
-
+            phase[i] += phraseIncr + phaseOffset;
             if (phase[i] >= 1.0) { phase[i] -= 1.0; }
-            lastPhase[i] = phase[i];
         }
     }
 
     void processBlock(juce::AudioBuffer<float>& buffer)
     {
+
+        float delayTimeInSamples = sampleRate / windowSizeInMilliseconds;
+        double normDelayTime = 0.0;
+
         for (int channel = 0; channel < buffer.getNumChannels(); ++channel){  
 
             auto readData = buffer.getReadPointer(channel);
@@ -71,10 +67,23 @@ public:
             {
                 float delaySumData = 0.0f;
                 dl.pushSample(channel, readData[sample]);
-                float data = dl.popSample(channel, sampleRate);
 
-                writeData[sample] = (data + readData[sample]) * 0.5f;
+                for (int i = 0; i < 4; i++){
 
+                    if (lastPhase[i] > phase[i])
+                    {
+                        normDelayTime = phase[i];
+                        float jitter = std::abs(rd[i].nextFloat()) * jitterAmount;
+                        normDelayTime += jitter;
+                    }
+                    lastPhase[i] = phase[i];
+
+                    delayTimeInSamples *= normDelayTime;
+                    delaySumData += dl.popSample(channel, delayTimeInSamples);
+                }
+
+                if (channel == 0) { advancePhase(); }
+                writeData[sample] = (delaySumData + readData[sample]) * 0.5f;
             }
         }
     }
@@ -87,7 +96,7 @@ private:
     std::array<juce::Random, 4> rd;
     juce::dsp::FastMathApproximations sin;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> dl;
-    float shiftAmount = 2, windowSizeInHertz, windowSizeInMilliseconds, jitterAmount;
+    float shiftAmount = 2, windowSizeInHertz = 4.0f, windowSizeInMilliseconds, jitterAmount;
 
 };
 

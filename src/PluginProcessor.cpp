@@ -86,6 +86,7 @@ void PetalAudioProcessor::changeProgramName (int index, const juce::String& newN
 void PetalAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     ps.prepareToPlay(sampleRate, samplesPerBlock);
+    rv.prepareToPlay(sampleRate, samplesPerBlock);
 }
 
 void PetalAudioProcessor::releaseResources()
@@ -129,8 +130,8 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
 
       //  auto* channelData = buffer.getWritePointer(0);
 
-
-        ps.processBlock(buffer);  
+        
+        rv.processSample(buffer);  
     
     
 }
