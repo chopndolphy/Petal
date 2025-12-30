@@ -11,10 +11,9 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "dsp/PitchShifter.h"
 #include "dsp/reverb/Reverb.h"
+#include "params/Parameters.h"
 
-//==============================================================================
-/**
-*/
+class Parameters;
 class PetalAudioProcessor  : public juce::AudioProcessor
 {
 public:
@@ -56,6 +55,8 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
 private:
+    std::unique_ptr<Parameters> params;
+
     PitchShifter ps;
     MyVerb rv;
     //==============================================================================

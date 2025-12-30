@@ -22,41 +22,44 @@ public:
         dl.setMaximumDelayInSamples(static_cast<int>(sampleRate * 2));
         dl.reset();
 
-        phase.fill(0.0);
-        lastPhase.fill(0.0);
+        for (int i = 0; i < 4; i++)
+        {
+            phase[i] = i * 0.25;
+            lastPhase[i] = i * 0.25;
+        }
+        delayTimeInSamples.fill(0.0);
+        
     }
 
     void setAttributes(float shiftAmount, float windowSizeInMilliseconds, float jitterAmount) 
     {
-        for (int i = 0; i < 4; i++){
-            if (lastPhase[i] > phase[i]){
-                this->shiftAmount = shiftAmount;
-                float windowSizeInHertz = windowSizeInMilliseconds/1000.0f;
-                this->windowSizeInMilliseconds = windowSizeInMilliseconds;
-                this->windowSizeInHertz = windowSizeInHertz;
-                this->jitterAmount = jitterAmount * 0.25f;
-            }
-            lastPhase[i] = phase[i];
+        if (lastPhase[0] > phase[0]){
+            this->shiftAmount = shiftAmount;
+            this->windowSizeInMilliseconds = windowSizeInMilliseconds;
+            float windowSizeInHertz = 1000.0f/windowSizeInMilliseconds;
+            this->windowSizeInHertz = windowSizeInHertz;
+            this->jitterAmount = jitterAmount * 0.25f;
         }
     }
     
     void advancePhase()
     {
-        double rate = (1.0 - shiftAmount) * 1000.0/windowSizeInMilliseconds;
+        double rate = ((1.0 - shiftAmount) * 1000.0)/windowSizeInMilliseconds;
         double phraseIncr = rate/sampleRate;
-        double phaseOffset = 0.25;
 
         for (int i = 0; i < 4; i++){
-            phase[i] += phraseIncr + phaseOffset;
+            phase[i] += phraseIncr;
             if (phase[i] >= 1.0) { phase[i] -= 1.0; }
+            if (phase[i] < 0.0) { phase[i] += 1.0; }
         }
     }
 
     void processBlock(juce::AudioBuffer<float>& buffer)
     {
 
-        float delayTimeInSamples = sampleRate / windowSizeInMilliseconds;
-        double normDelayTime = 0.0;
+        float windowSizeInSamples = (sampleRate / 1000.0) * windowSizeInMilliseconds;
+
+        double normDelayTime;
 
         for (int channel = 0; channel < buffer.getNumChannels(); ++channel){  
 
@@ -65,25 +68,26 @@ public:
 
             for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
             {
+                if (channel == 0) { advancePhase(); }
+                
                 float delaySumData = 0.0f;
                 dl.pushSample(channel, readData[sample]);
 
                 for (int i = 0; i < 4; i++){
 
+                    normDelayTime = phase[i];
                     if (lastPhase[i] > phase[i])
                     {
-                        normDelayTime = phase[i];
                         float jitter = std::abs(rd[i].nextFloat()) * jitterAmount;
                         normDelayTime += jitter;
+                        delayTimeInSamples[i] = windowSizeInSamples * normDelayTime;
                     }
-                    lastPhase[i] = phase[i];
 
-                    delayTimeInSamples *= normDelayTime;
-                    delaySumData += dl.popSample(channel, delayTimeInSamples);
+                    lastPhase[i] = phase[i];
+                    delaySumData += dl.popSample(channel, delayTimeInSamples[i], true);
                 }
 
-                if (channel == 0) { advancePhase(); }
-                writeData[sample] = (delaySumData + readData[sample]) * 0.5f;
+                writeData[sample] = (delaySumData) * 0.5f;
             }
         }
     }
@@ -92,11 +96,11 @@ private:
     double sampleRate;
     std::array<double, 4> phase;
     std::array<double, 4> lastPhase;
+    std::array<double, 4> delayTimeInSamples;
 
     std::array<juce::Random, 4> rd;
-    juce::dsp::FastMathApproximations sin;
+    juce::dsp::FastMathApproximations window;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> dl;
-    float shiftAmount = 2, windowSizeInHertz = 4.0f, windowSizeInMilliseconds, jitterAmount;
-
+    float shiftAmount = 2.0f, windowSizeInHertz = 4.0f, windowSizeInMilliseconds, jitterAmount = 0.0f;
 };
 

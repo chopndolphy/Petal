@@ -14,6 +14,7 @@ PetalAudioProcessor::PetalAudioProcessor()
                        )
 #endif
 {
+    params = std::make_unique<Parameters>(*this);
 }
 
 PetalAudioProcessor::~PetalAudioProcessor()
@@ -117,7 +118,10 @@ bool PetalAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
 void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     
-    ps.setAttributes(2.0, 200.0f, 0.2f);
+    
+    ps.setAttributes(params->shiftAmount->get(),
+                     params->windowSize->get(),
+                     0.2f);
 
 
     juce::ScopedNoDenormals noDenormals;
@@ -126,8 +130,10 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
-        
-        rv.processSample(buffer);  
+
+        ps.setAttributes(2.0, 5.0f, 0.0f);
+        ps.processBlock(buffer);
+    //    rv.processSample(buffer);  
     
     
 }

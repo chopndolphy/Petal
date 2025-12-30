@@ -25,5 +25,5 @@ void PetalAudioProcessorEditor::paint (juce::Graphics& g)
 
 void PetalAudioProcessorEditor::resized()
 {
-    webview.setBounds(getLocalBounds());
+    webview.setBounds(0, 0, getLocalBounds().getHeight(), getLocalBounds().getHeight());
 }

@@ -37,6 +37,9 @@ target_sources(Petal
         src/PluginProcessor.h
         src/PluginEditor.cpp
         src/PluginEditor.h
+        src/params/Parameters.cpp
+        src/params/Parameters.h
+
 )
 
 # Preprocessor definitions
