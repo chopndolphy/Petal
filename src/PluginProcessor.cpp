@@ -121,7 +121,7 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     
     ps.setAttributes(params->shiftAmount->get(),
                      params->windowSize->get(),
-                     0.2f);
+                     0.0f);
 
 
     juce::ScopedNoDenormals noDenormals;
@@ -131,7 +131,7 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-        ps.setAttributes(2.0, 5.0f, 0.0f);
+    //    ps.setAttributes(2.0, 5.0f, 0.0f);
         ps.processBlock(buffer);
     //    rv.processSample(buffer);  
     

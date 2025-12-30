@@ -19,7 +19,7 @@ public:
         spec.maximumBlockSize = samplesPerBlock;
 
         dl.prepare(spec);
-        dl.setMaximumDelayInSamples(static_cast<int>(sampleRate * 2));
+        dl.setMaximumDelayInSamples((int)(sampleRate * 2));
         dl.reset();
 
         for (int i = 0; i < 4; i++)
@@ -33,13 +33,13 @@ public:
 
     void setAttributes(float shiftAmount, float windowSizeInMilliseconds, float jitterAmount) 
     {
-        if (lastPhase[0] > phase[0]){
+    //    if (lastPhase[0] > phase[0]){
             this->shiftAmount = shiftAmount;
             this->windowSizeInMilliseconds = windowSizeInMilliseconds;
             float windowSizeInHertz = 1000.0f/windowSizeInMilliseconds;
             this->windowSizeInHertz = windowSizeInHertz;
             this->jitterAmount = jitterAmount * 0.25f;
-        }
+     //   }
     }
     
     void advancePhase()
@@ -73,21 +73,23 @@ public:
                 float delaySumData = 0.0f;
                 dl.pushSample(channel, readData[sample]);
 
-                for (int i = 0; i < 4; i++){
-
+                for (int i = 0; i < 1; i++){
+                    
                     normDelayTime = phase[i];
+
                     if (lastPhase[i] > phase[i])
                     {
-                        float jitter = std::abs(rd[i].nextFloat()) * jitterAmount;
+                        float jitter = std::abs(rd[i].nextFloat()) * jitterAmount + 1.0f;
                         normDelayTime += jitter;
-                        delayTimeInSamples[i] = windowSizeInSamples * normDelayTime;
                     }
 
+                    delayTimeInSamples[i] = windowSizeInSamples * normDelayTime;
                     lastPhase[i] = phase[i];
-                    delaySumData += dl.popSample(channel, delayTimeInSamples[i], true);
-                }
 
-                writeData[sample] = (delaySumData) * 0.5f;
+                    bool advance = i == 0;
+                    delaySumData += dl.popSample(channel, delayTimeInSamples[i], advance) * (window.sin(phase[i] * pi) * 0.5 + 0.5);
+                }
+                writeData[sample] = delaySumData;
             }
         }
     }
@@ -100,6 +102,7 @@ private:
 
     std::array<juce::Random, 4> rd;
     juce::dsp::FastMathApproximations window;
+    double pi = juce::MathConstants<double>::pi;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> dl;
     float shiftAmount = 2.0f, windowSizeInHertz = 4.0f, windowSizeInMilliseconds, jitterAmount = 0.0f;
 };
