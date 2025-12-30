@@ -54,46 +54,49 @@ public:
         }
     }
 
-    void processBlock(juce::AudioBuffer<float>& buffer)
-    {
-
-        float windowSizeInSamples = (sampleRate / 1000.0) * windowSizeInMilliseconds;
-
-        double normDelayTime;
-
-        for (int channel = 0; channel < buffer.getNumChannels(); ++channel){  
-
-            auto readData = buffer.getReadPointer(channel);
-            auto writeData = buffer.getWritePointer(channel);
-
-            for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+void processBlock(juce::AudioBuffer<float>& buffer)
+{
+    float windowSizeInSamples = (sampleRate / 1000.0) * windowSizeInMilliseconds;
+    
+    for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+    {  
+        auto readData = buffer.getReadPointer(channel);
+        auto writeData = buffer.getWritePointer(channel);
+        
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+        {
+            if (channel == 0)
             {
-                if (channel == 0) { advancePhase(); }
-                
-                float delaySumData = 0.0f;
-                dl.pushSample(channel, readData[sample]);
-
-                for (int i = 0; i < 1; i++){
+                for (int i = 0; i < 1; i++)
+                {
+                    double normDelayTime = phase[i];
                     
-                    normDelayTime = phase[i];
-
                     if (lastPhase[i] > phase[i])
                     {
                         float jitter = std::abs(rd[i].nextFloat()) * jitterAmount + 1.0f;
                         normDelayTime += jitter;
                     }
-
+                    
                     delayTimeInSamples[i] = windowSizeInSamples * normDelayTime;
                     lastPhase[i] = phase[i];
-
-                    bool advance = i == 0;
-                    delaySumData += dl.popSample(channel, delayTimeInSamples[i], advance) * (window.sin(phase[i] * pi) * 0.5 + 0.5);
                 }
-                writeData[sample] = delaySumData;
+                advancePhase();
             }
+            
+            float delaySumData = 0.0f;
+            dl.pushSample(channel, readData[sample]);
+            
+            for (int i = 0; i < 1; i++)
+            {
+                bool advance = (i == 0);
+                float window = (cos.cos((phase[i] - 0.5) * pi) * 0.5 + 0.5);
+                delaySumData += dl.popSample(channel, delayTimeInSamples[i], advance) * window;
+            }
+            
+            writeData[sample] = delaySumData;
         }
     }
-
+}
 private: 
     double sampleRate;
     std::array<double, 4> phase;
@@ -101,7 +104,7 @@ private:
     std::array<double, 4> delayTimeInSamples;
 
     std::array<juce::Random, 4> rd;
-    juce::dsp::FastMathApproximations window;
+    juce::dsp::FastMathApproximations cos;
     double pi = juce::MathConstants<double>::pi;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> dl;
     float shiftAmount = 2.0f, windowSizeInHertz = 4.0f, windowSizeInMilliseconds, jitterAmount = 0.0f;
