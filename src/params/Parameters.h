@@ -19,7 +19,19 @@ public:
 
     
     std::unique_ptr<ParameterInstance>
-    shiftAmount, windowSize;
+    shiftAmount, windowSize,
+
+    freeTimeL,
+    freeTimeR,
+    syncTimeL,
+    syncTimeR,
+    reverbDecayTime,
+    reverbLevel,
+    pitchShiftWindowSize,
+    pitchShiftJitterAmount,
+    filterCutoff,
+    filterRes,
+    filterType;
     
 };
 

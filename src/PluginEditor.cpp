@@ -68,7 +68,7 @@ PetalAudioProcessorEditor::PetalAudioProcessorEditor (PetalAudioProcessor& p)
 PetalAudioProcessorEditor::~PetalAudioProcessorEditor()
 {
 
-}
+}`
 
 //==============================================================================
 void PetalAudioProcessorEditor::paint (juce::Graphics& g)
