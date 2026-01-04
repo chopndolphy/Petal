@@ -1,13 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
+<head>
+<title>Petal</title>
+</head>
+<body>
+<main>
+<h1>Hello, World</h1>
+<h2>Count!</h2>
 
-        <title>Petal</title>
-    </head>
+</main>
+</body>
+<script src="juce.js"></script>
 
-    <body>
-        <h1>Hello, World</h1>
+<script>
+    let amplitude = 0;
+    let eventCount = 0;
+    document.addEventListener("click", () => {
+        eventCount++
+        document.querySelector("h2").innerText = eventCount;
+    })
 
+    window.__JUCE__.backend.addEventListener("testEvent", (testVal) => {
+        const jsTestVal = JSON.parse(testVal);
+        document.querySelector("h1").innerText = jsTestVal;
+    });
 
-    </body>
+</script>
 </html>

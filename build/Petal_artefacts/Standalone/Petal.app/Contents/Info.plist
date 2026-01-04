@@ -8,7 +8,7 @@
     <key>CFBundleIconFile</key>
     <string></string>
     <key>CFBundleIdentifier</key>
-    <string>com.Rainbow Circuit.Petal</string>
+    <string>com.rainbowcircuit.Petal</string>
     <key>CFBundleName</key>
     <string>Petal</string>
     <key>CFBundleDisplayName</key>

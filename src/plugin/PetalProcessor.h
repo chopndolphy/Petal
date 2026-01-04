@@ -1,5 +1,6 @@
 #include <JuceHeader.h>
 #include "dsp/PitchShifter.h"
+#include "dsp/reverb/Reverb.h"
 
 class PetalProcessor
 {
@@ -11,9 +12,13 @@ public:
         spec.maximumBlockSize = maximumBlockSize;
         spec.numChannels = 2;
 
-        dl.prepare(spec);
-        dl.setMaximumDelayInSamples((int)(sampleRate * 10));
-        dl.reset();
+        dlL.prepare(spec);
+        dlL.setMaximumDelayInSamples((int)(sampleRate * 10));
+        dlL.reset();
+
+        dlR.prepare(spec);
+        dlR.setMaximumDelayInSamples((int)(sampleRate * 10));
+        dlR.reset();
     }
 
 
@@ -28,24 +33,58 @@ public:
 
     }
 
-    void setDelayValues(int channel, bool channelSynced, float delayTimeInMilliseconds, int delayTimeInSubdiv, float lerpAmount, float sigmoidAmount)
+    void setDelayValues(int channel, bool channelSynced, float delayTimeInMilliseconds, 
+        int delayTimeInSubdiv, float shapingX, float shapingY, float quantizeTime)
     {
+        
+        for(int i = 0; i < 8; i++)
+        {
+            float linear;
+            float sigmoid;
 
+
+
+        }
+    }
+
+    void setBPM(juce::AudioPlayHead* playhead)
+    {
+        if (playhead == nullptr) { return; }
+        if(playhead->getPosition()->getBpm().hasValue())
+        {
+            this->bpm = *playhead->getPosition()->getBpm();
+        }
     }
 
     void setFeedback(float feedbackAmount)
     {
-
+        
     }
 
     void processBlock(juce::AudioBuffer<float>& buffer) 
     {
-        
+        auto readData = buffer.getReadPointer(0);
+        auto writeData = buffer.getWritePointer(0);
 
+        float outData = 0;
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample){
+
+            for (int i = 0; i < 8; i++)
+            {
+                dlL.pushSample(0, readData[sample]);
+                float delayedData = dlL.popSample(0, tp[i].freeTime, false);
+
+                outData += delayedData;
+            }
+            writeData[sample] = outData;
+        }
+
+        
     }
 
 
 private: 
+    double bpm;
     struct tapAttributes 
     { 
         bool isLeft = true;
@@ -55,8 +94,10 @@ private:
         float reverbAmt;
     };
 
+    bool feedbackSuppression = false;
     std::array<tapAttributes, 16> tp;
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> dl;
     std::array<PitchShifter, 16> ps;
+    Reverb rv;
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> dlL, dlR;
 
 };

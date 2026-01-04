@@ -118,7 +118,6 @@ bool PetalAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
 void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     
-    
     ps.setAttributes(params->shiftAmount->get(),
                      params->windowSize->get(),
                      0.0f);

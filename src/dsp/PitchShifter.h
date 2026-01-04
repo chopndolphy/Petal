@@ -33,13 +33,11 @@ public:
 
     void setAttributes(float shiftAmount, float windowSizeInMilliseconds, float jitterAmount) 
     {
-    //    if (lastPhase[0] > phase[0]){
-            this->shiftAmount = shiftAmount;
-            this->windowSizeInMilliseconds = windowSizeInMilliseconds;
-            float windowSizeInHertz = 1000.0f/windowSizeInMilliseconds;
-            this->windowSizeInHertz = windowSizeInHertz;
-            this->jitterAmount = jitterAmount * 0.25f;
-     //   }
+        this->shiftAmount = shiftAmount;
+        this->windowSizeInMilliseconds = windowSizeInMilliseconds;
+        float windowSizeInHertz = 1000.0f/windowSizeInMilliseconds;
+        this->windowSizeInHertz = windowSizeInHertz;
+        this->jitterAmount = jitterAmount * 0.25f;
     }
     
     void advancePhase()
@@ -67,7 +65,7 @@ void processBlock(juce::AudioBuffer<float>& buffer)
         {
             if (channel == 0)
             {
-                for (int i = 0; i < 1; i++)
+                for (int i = 0; i < 4; i++)
                 {
                     double normDelayTime = phase[i];
                     
@@ -86,13 +84,12 @@ void processBlock(juce::AudioBuffer<float>& buffer)
             float delaySumData = 0.0f;
             dl.pushSample(channel, readData[sample]);
             
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < 4; i++)
             {
                 bool advance = (i == 0);
                 float window = (cos.cos((phase[i] - 0.5) * pi) * 0.5 + 0.5);
                 delaySumData += dl.popSample(channel, delayTimeInSamples[i], advance) * window;
             }
-            
             writeData[sample] = delaySumData;
         }
     }

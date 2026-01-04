@@ -8,7 +8,7 @@
 //==============================================================================
 /**
 */
-class PetalAudioProcessorEditor  : public juce::AudioProcessorEditor
+class PetalAudioProcessorEditor  : public juce::AudioProcessorEditor, public juce::Timer
 {
 public:
     PetalAudioProcessorEditor (PetalAudioProcessor&);
@@ -19,8 +19,12 @@ public:
     void resized() override;
 
 private:
-
     PetalAudioProcessor& audioProcessor;
     juce::WebBrowserComponent webview;
+
+    auto getResource(const juce::String& url) -> std::optional<juce::WebBrowserComponent::Resource>;
+    void timerCallback() override;
+
+    int testVal = 0;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PetalAudioProcessorEditor)
 };

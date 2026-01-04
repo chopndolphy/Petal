@@ -46,7 +46,6 @@ public:
     
     void setDecayTime() {}
 
-    
     void processSample(juce::AudioBuffer<float>& buffer)
     {
 
