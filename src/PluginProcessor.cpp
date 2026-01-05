@@ -17,6 +17,7 @@ PetalAudioProcessor::PetalAudioProcessor()
     params = std::make_unique<Parameters>(*this);
 }
 
+
 PetalAudioProcessor::~PetalAudioProcessor()
 {
 }
@@ -86,8 +87,11 @@ void PetalAudioProcessor::changeProgramName (int index, const juce::String& newN
 //==============================================================================
 void PetalAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    ps.prepareToPlay(sampleRate, samplesPerBlock);
-    rv.prepareToPlay(sampleRate, samplesPerBlock);
+  //  ps.prepareToPlay(sampleRate, samplesPerBlock);
+  //  rv.prepareToPlay(sampleRate, samplesPerBlock);
+
+    petal.prepareToPlay(sampleRate, samplesPerBlock);
+
 }
 
 void PetalAudioProcessor::releaseResources()
@@ -118,10 +122,11 @@ bool PetalAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
 void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     
+    /*
     ps.setAttributes(params->shiftAmount->get(),
                      params->windowSize->get(),
                      0.0f);
-
+*/
 
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -130,8 +135,20 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+        petal.setPitchShifter(0, 12);
+        petal.setPitchShifter(1, -5);
+        petal.setPitchShifter(2, 4);
+        petal.setPitchShifter(3, -12);
+        petal.setPitchShifter(4, 0);
+        petal.setPitchShifter(5, -8);
+        petal.setPitchShifter(6, 12);
+        petal.setPitchShifter(7, 0);
+
+
+        petal.processBlock(buffer);
+
     //    ps.setAttributes(2.0, 5.0f, 0.0f);
-        ps.processBlock(buffer);
+     //   ps.processBlock(buffer);
     //    rv.processSample(buffer);  
     
     
@@ -159,7 +176,6 @@ void PetalAudioProcessor::setStateInformation (const void* data, int sizeInBytes
 }
 
 //==============================================================================
-// This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new PetalAudioProcessor();

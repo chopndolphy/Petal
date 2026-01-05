@@ -9,9 +9,10 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
-#include "dsp/PitchShifter.h"
-#include "dsp/reverb/Reverb.h"
+// #include "dsp/PitchShifter.h"
+// #include "dsp/reverb/Reverb.h"
 #include "params/Parameters.h"
+#include "plugin/PetalProcessor.h"
 
 class Parameters;
 class PetalAudioProcessor  : public juce::AudioProcessor
@@ -54,11 +55,16 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-private:
-    std::unique_ptr<Parameters> params;
 
-    PitchShifter ps;
-    MyVerb rv;
+        std::unique_ptr<Parameters> params;
+
+            PetalProcessor petal;
+
+private:
+
+    std::array<std::atomic<float>, 8> tapAmplitudes;
+ //   PitchShifter ps;
+ //  MyVerb rv;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PetalAudioProcessor)
 };

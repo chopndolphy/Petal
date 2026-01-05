@@ -18,6 +18,13 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
+
+    void setValuesInWebview()
+    {
+        webview.emitEventIfBrowserIsVisible("reverbDecayTime", juce::JSON::toString(audioProcessor.params->reverbDecayTime->getSafe()));
+        webview.emitEventIfBrowserIsVisible("reverbLevel", juce::JSON::toString(audioProcessor.params->reverbLevel->getSafe()));
+    }
+    
 private:
     PetalAudioProcessor& audioProcessor;
     juce::WebBrowserComponent webview;

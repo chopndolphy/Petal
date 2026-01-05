@@ -5,8 +5,13 @@
 </head>
 <body>
 <main>
-<h1>Hello, World</h1>
+<h1 id="ampL">AmpL</h1>
+<h1 id="ampR">AmpR</h1>
+
+
 <h2>Count!</h2>
+<h2 id="reverbDecayTime">DecayTime</h2>
+<h2 id="reverbLevel">Level</h2>
 
 </main>
 </body>
@@ -20,10 +25,18 @@
         document.querySelector("h2").innerText = eventCount;
     })
 
-    window.__JUCE__.backend.addEventListener("testEvent", (testVal) => {
+    window.__JUCE__.backend.addEventListener("amplitudesL", (testVal) => {
         const jsTestVal = JSON.parse(testVal);
-        document.querySelector("h1").innerText = jsTestVal;
+        document.querySelector("#ampL").innerText = jsTestVal;
     });
+
+    window.__JUCE__.backend.addEventListener("amplitudesR", (testVal) => {
+        const jsTestVal = JSON.parse(testVal);
+
+        document.querySelector("#ampR").innerText = jsTestVal;
+    });
+
+
 
 </script>
 </html>

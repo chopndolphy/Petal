@@ -7,6 +7,8 @@ public:
     {
         phase.fill(0.0);
         lastPhase.fill(0.0);
+
+        this->pi = juce::MathConstants<double>::pi;
     }
 
     void prepareToPlay(double sampleRate, int samplesPerBlock) 
@@ -15,7 +17,7 @@ public:
 
         juce::dsp::ProcessSpec spec;
         spec.sampleRate = sampleRate;
-        spec.numChannels = 2;
+        spec.numChannels = 1;
         spec.maximumBlockSize = samplesPerBlock;
 
         dl.prepare(spec);
@@ -24,20 +26,25 @@ public:
 
         for (int i = 0; i < 4; i++)
         {
-            phase[i] = i * 0.25;
-            lastPhase[i] = i * 0.25;
+            phase[i] = i * 0.5;
+            lastPhase[i] = i * 0.5;
         }
         delayTimeInSamples.fill(0.0);
         
     }
 
-    void setAttributes(float shiftAmount, float windowSizeInMilliseconds, float jitterAmount) 
+    void setAttributes(float windowSizeInMilliseconds, float jitterAmount) 
     {
-        this->shiftAmount = shiftAmount;
         this->windowSizeInMilliseconds = windowSizeInMilliseconds;
         float windowSizeInHertz = 1000.0f/windowSizeInMilliseconds;
         this->windowSizeInHertz = windowSizeInHertz;
         this->jitterAmount = jitterAmount * 0.25f;
+    }
+
+    void setShiftAmount(float intervalInSemitones)
+    {
+        float shiftAmount = std::exp(0.057762265f * intervalInSemitones);
+        this->shiftAmount = shiftAmount;
     }
     
     void advancePhase()
@@ -52,6 +59,7 @@ public:
         }
     }
 
+/*
 void processBlock(juce::AudioBuffer<float>& buffer)
 {
     float windowSizeInSamples = (sampleRate / 1000.0) * windowSizeInMilliseconds;
@@ -94,6 +102,38 @@ void processBlock(juce::AudioBuffer<float>& buffer)
         }
     }
 }
+    */
+
+
+float processSample(float sample)
+{
+    float windowSizeInSamples = (sampleRate / 1000.0) * windowSizeInMilliseconds;
+    float pitchShifted = 0.0f;
+    dl.pushSample(0, sample);
+
+    for (int i = 0; i < 2; i++)
+    {
+        double normPhase = phase[i];
+        
+        if (lastPhase[i] < phase[i])
+        {
+            float jitter = std::abs(rd[i].nextFloat()) * jitterAmount + 1.0f;
+            normPhase += jitter;
+        }
+        
+        delayTimeInSamples[i] = windowSizeInSamples * normPhase;
+        lastPhase[i] = phase[i];
+
+        float window = cos.cos((normPhase - 0.5) * pi);
+        window *= window;
+        pitchShifted += (dl.popSample(0, delayTimeInSamples[i], i == 0) * window);
+
+    }
+    advancePhase();
+
+    return pitchShifted;
+}
+
 private: 
     double sampleRate;
     std::array<double, 4> phase;
@@ -102,7 +142,7 @@ private:
 
     std::array<juce::Random, 4> rd;
     juce::dsp::FastMathApproximations cos;
-    double pi = juce::MathConstants<double>::pi;
+    double pi;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> dl;
     float shiftAmount = 2.0f, windowSizeInHertz = 4.0f, windowSizeInMilliseconds, jitterAmount = 0.0f;
 };

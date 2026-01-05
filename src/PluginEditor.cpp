@@ -68,7 +68,7 @@ PetalAudioProcessorEditor::PetalAudioProcessorEditor (PetalAudioProcessor& p)
 PetalAudioProcessorEditor::~PetalAudioProcessorEditor()
 {
 
-}`
+}
 
 //==============================================================================
 void PetalAudioProcessorEditor::paint (juce::Graphics& g)
@@ -95,7 +95,27 @@ auto PetalAudioProcessorEditor::getResource(const juce::String& url) -> std::opt
 
 void PetalAudioProcessorEditor::timerCallback()
 {
-    testVal += 1;
-    if (testVal >= 1000) { testVal = 0; } 
-    webview.emitEventIfBrowserIsVisible("testEvent", juce::JSON::toString(testVal));
+
+    
+    juce::var amplitudesL{juce::Array<juce::var>()};
+    juce::var amplitudesR{juce::Array<juce::var>()};
+
+    for (int i = 0; i < 8; i++){
+        int ampBoolL = audioProcessor.petal.amplitudesL[i].load() > 0 ? 20 : 0;
+        amplitudesL.append(ampBoolL);
+        amplitudesR.append(audioProcessor.petal.amplitudesR[i].load());
+
+    }
+    
+    webview.emitEventIfBrowserIsVisible("amplitudesL", juce::JSON::toString(amplitudesL));
+    webview.emitEventIfBrowserIsVisible("amplitudesR", juce::JSON::toString(amplitudesR));
+
+
+
+  //  webview.emitEventIfBrowserIsVisible("testEvent", juce::JSON::toString(testVal));
+
+    setValuesInWebview();
+
+
+
 }

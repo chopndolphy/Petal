@@ -16,7 +16,6 @@ apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
     filterCutoff = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterCutoff");
     filterRes = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterRes");
     filterType = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterType");
-    
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout
