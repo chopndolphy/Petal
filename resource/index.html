@@ -29,7 +29,7 @@
                 0                  // rotation
             );
             curves.push(curve);
-        
+
         }
         for (let i = 0; i < 8; i++){
 
@@ -46,9 +46,10 @@
         // Animation loop
         function animate() {
             requestAnimationFrame(animate);
-            lines.forEach(line => {
-                line.position.z -= 0.01;
-            })
+            for (let i = 0; i < 8; i++)
+            {
+                lines[i].position.z -= 0.01;
+            }
             renderer.render(scene, camera);
         }
         animate();

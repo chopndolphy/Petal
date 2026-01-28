@@ -1,10 +1,20 @@
 #include <JuceHeader.h>
 #include "../dsp/PitchShifter.h"
 // #include "dsp/reverb/Reverb.h"
+//==============================================================================
 
 class PetalProcessor
 {
 public: 
+    PetalProcessor()
+    {
+        for(int i = 0; i < 8; i++)
+        {
+            ps[i] = std::make_unique<PitchShifter>(dl);
+        //    psR[i] = std::make_unique<PitchShifter>(dl);
+        }
+    }
+
     void prepareToPlay(double sampleRate, int maximumBlockSize) 
     {
         juce::dsp::ProcessSpec spec;
@@ -12,27 +22,18 @@ public:
         spec.maximumBlockSize = maximumBlockSize;
         spec.numChannels = 2;
 
-        dlL.prepare(spec);
-        dlL.setMaximumDelayInSamples((int)(sampleRate * 10));
-        dlL.reset();
-
-        dlR.prepare(spec);
-        dlR.setMaximumDelayInSamples((int)(sampleRate * 10));
-        dlR.reset();
+        dl.prepare(spec);
+        dl.setMaximumDelayInSamples((int)(sampleRate * 10));
+        dl.reset();
 
         this->sampleRate = sampleRate;
 
         for(int i = 0; i < 8; i++)
         {
-            tp[i].freeTime = 200.0;
-            psL[i].prepareToPlay(sampleRate, maximumBlockSize);
-            psR[i].prepareToPlay(sampleRate, maximumBlockSize);
+            tpL[i].freeTime = 200.0;
+            ps[i]->prepareToPlay(0, sampleRate);
+           // psR[i]->prepareToPlay(1, sampleRate);
         }
-
-        // atomic
-    //    amplitudesL.fill(0.0f);
-     //   amplitudesR.fill(0.0f);
-
     }
 
 
@@ -44,25 +45,43 @@ public:
 
     void setPitchShifter(int tapIndex, int shiftAmountInSemitones)
     {
-        psL[tapIndex].setShiftAmount(shiftAmountInSemitones);
-        psR[tapIndex].setShiftAmount(shiftAmountInSemitones);
+        ps[tapIndex]->setShiftAmount(shiftAmountInSemitones);
+     //   psR[tapIndex]->setShiftAmount(shiftAmountInSemitones);
      
         for(int i = 0; i < 8; i++)
         {
-            psL[i].setAttributes(75, 0.0);
-            psR[i].setAttributes(75, 0.0);
+            ps[i]->setAttributes(75, 0.0);
+         //   psR[i]->setAttributes(75, 0.0);
         }
     }
 
-    void setDelayValues(int channel, bool channelSynced, float delayTimeInMilliseconds, 
-        int delayTimeInSubdiv, float shapingX, float shapingY, float quantizeTime)
+    void setTime(float freeTimeL, float freeTimeR, int syncTimeL, int syncTimeR, 
+        float shapingXL, float shapingYL, float shapingXR, float shapingYR, bool stereoLock)
     {
-    
-            float linear;
-            float sigmoid;
-        
+        float freeTimeLInMilliseconds = freeTimeL;
+        float freeTimeRInMilliseconds = freeTimeR;
+        float syncTimeLInMilliseconds = 1000.0f / ((bpm/60.0f) * syncTimeOptions[syncTimeL]);
+        float syncTimeRInMilliseconds = 1000.0f / ((bpm/60.0f) * syncTimeOptions[syncTimeR]);
 
+        for (int i = 1; i <= 7; i++){
+            float sigmoidScaleL = i - shapingYL * 7;
+            float sigmoidScaleR = i - shapingYL * 7;
 
+            float linearL = (1.0f/8.0f) * i;
+            float linearR = (1.0f/8.0f) * i;
+
+            float sigmoidL = 1.0f/(1.0f + std::exp(-sigmoidScaleL));
+            float sigmoidR = 1.0f/(1.0f + std::exp(-sigmoidScaleR));
+
+            float lerpL = linearL + (sigmoidL - linearL) * shapingXL;
+            float lerpR = linearR + (sigmoidR - linearR) * shapingXR;
+
+            tpL[i].freeTime = lerpL * freeTimeLInMilliseconds;
+            tpR[i].freeTime = lerpR * freeTimeRInMilliseconds;
+
+            tpL[i].syncTime = lerpR * syncTimeLInMilliseconds;
+            tpR[i].syncTime = lerpR * syncTimeRInMilliseconds;
+        }
     }
 
     void setBPM(juce::AudioPlayHead* playhead)
@@ -81,46 +100,39 @@ public:
 
     void processBlock(juce::AudioBuffer<float>& buffer) 
     {
-        // do this elsewhere
-
         auto readDataL = buffer.getReadPointer(0);
         auto writeDataL = buffer.getWritePointer(0);
 
         auto readDataR = buffer.getReadPointer(1);
         auto writeDataR = buffer.getWritePointer(1);
 
-
         for (int sample = 0; sample < buffer.getNumSamples(); ++sample){
 
             float outDataL = 0.0f;
             float outDataR = 0.0f;
 
-            dlL.pushSample(0, readDataL[sample]);
-            dlR.pushSample(0, readDataR[sample]);
+            dl.pushSample(0, readDataL[sample]);
+            dl.pushSample(1, readDataR[sample]);
 
-            for (int i = 0; i < 8; i++)
+            for (int tap = 0; tap < 8; tap++)
             {
-                
-                float delayTimeInSamps = tp[i].freeTime * (sampleRate/1000.0f) * i; // * i for now
+                float delayTimeInSampsL = tpL[tap].freeTime * (sampleRate/1000.0f) * tap;
+                float delayTimeInSampsR = tpR[tap].freeTime * (sampleRate/1000.0f) * tap;
 
-                float delayedDataL = dlL.popSample(0, delayTimeInSamps, i == 0);
-                float delayedDataR = dlR.popSample(0, delayTimeInSamps, i == 0);
-
-                float pitchShiftL = psL[i].processSample(delayedDataL);
-                float pitchShiftR = psR[i].processSample(delayedDataR);
+                float pitchShiftL = ps[tap]->processSample(0, tap, delayTimeInSampsL);
+                float pitchShiftR = ps[tap]->processSample(1, tap, delayTimeInSampsL);
 
                 outDataL += pitchShiftL;
                 outDataR += pitchShiftR;
 
-                amplitudesL[i].store(pitchShiftL);
-                amplitudesR[i].store(pitchShiftR);
+                amplitudesL[tap].store(pitchShiftL);
+                amplitudesR[tap].store(pitchShiftR);
             }
 
             writeDataL[sample] = readDataL[sample] + outDataL;
             writeDataR[sample] = readDataR[sample] + outDataR;
         }
-    }
-    
+    }  
 
     std::array<std::atomic<float>, 8> amplitudesL, amplitudesR; 
 
@@ -135,12 +147,21 @@ private:
         float reverbAmt;
     };
 
+    std::array<tapAttributes, 8> tpL, tpR;
+
+    static constexpr std::array<double, 19> syncTimeOptions = {
+         0.03125,   0.04167,   0.0625,   0.0833,
+         0.125,     0.25,      0.333,    0.5,
+         0.666,     0.75,      0.8,      1.0,
+         1.333,     1.5,       2.0,      3.0,
+         4.0,       6.0,       8.0
+    };
 
     double sampleRate;
+
     bool feedbackSuppression = false;
-    std::array<tapAttributes, 16> tp;
-    std::array<PitchShifter, 8> psL, psR;
- //   Reverb rv;
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> dlL, dlR;
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> dl;
+
+    std::array<std::unique_ptr<PitchShifter>, 8> ps;
 
 };

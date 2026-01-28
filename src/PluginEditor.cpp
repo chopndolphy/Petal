@@ -110,10 +110,6 @@ void PetalAudioProcessorEditor::timerCallback()
     webview.emitEventIfBrowserIsVisible("amplitudesL", juce::JSON::toString(amplitudesL));
     webview.emitEventIfBrowserIsVisible("amplitudesR", juce::JSON::toString(amplitudesR));
 
-
-
-  //  webview.emitEventIfBrowserIsVisible("testEvent", juce::JSON::toString(testVal));
-
     setValuesInWebview();
 
 

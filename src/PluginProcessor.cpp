@@ -147,11 +147,6 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
 
         petal.processBlock(buffer);
 
-    //    ps.setAttributes(2.0, 5.0f, 0.0f);
-     //   ps.processBlock(buffer);
-    //    rv.processSample(buffer);  
-    
-    
 }
 
 //==============================================================================

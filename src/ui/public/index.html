@@ -1,42 +1,83 @@
-<!DOCTYPE html>
-<html lang="en">
 <head>
-<title>Petal</title>
+    <meta charset="UTF-8">
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
 </head>
 <body>
-<main>
-<h1 id="ampL">AmpL</h1>
-<h1 id="ampR">AmpR</h1>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        
+        class PetalGraphics
+        {
+            state = {
+                isLeft: true,
+                isActive: true,
+                radius: 20.0
+            }
+
+            arcs = [];
+            constructor(){
+                let material = new THREE.THREE.MeshBasicMaterial({color: 0xffff00});
+
+                for(let i = 0; i < 8; i++){
+                    let geometry = new THREE.RingGeometry(1, 5, 40, 1, 0, Math.PI * 0.75);
+                    let mesh = new THREE.Mesh(geometry, material);
+                    this.arcs.push(mesh);
+                }
+            }
+
+            render(scene) {
+                this.arcs.forEach(arc => {
+                    scene.add(arc);
+                })
+            }
+        }
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const petalGraphics = new PetalGraphics();
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
 
-<h2>Count!</h2>
-<h2 id="reverbDecayTime">DecayTime</h2>
-<h2 id="reverbLevel">Level</h2>
-
-</main>
-</body>
-<script src="juce.js"></script>
-
-<script>
-    let amplitude = 0;
-    let eventCount = 0;
-    document.addEventListener("click", () => {
-        eventCount++
-        document.querySelector("h2").innerText = eventCount;
-    })
-
-    window.__JUCE__.backend.addEventListener("amplitudesL", (testVal) => {
-        const jsTestVal = JSON.parse(testVal);
-        document.querySelector("#ampL").innerText = jsTestVal;
-    });
-
-    window.__JUCE__.backend.addEventListener("amplitudesR", (testVal) => {
-        const jsTestVal = JSON.parse(testVal);
-
-        document.querySelector("#ampR").innerText = jsTestVal;
-    });
+        petalGraphics.render(scene)
 
 
 
-</script>
-</html>
+
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+
+
+
+
+
+
+
+
+        window.__JUCE__.backend.addEventListener("amplitudesL", (testVal) => {
+            const jsTestVal = JSON.parse(testVal);
+            for (let i = 0; i < 8; i++)
+            {
+          //      lines[i].position.z = jsTestVal[i] * -0.005;
+            }
+
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+        //    camera.aspect = window.innerHeight / window.innerHeight;
+         //   camera.updateProjectionMatrix();
+            renderer.setSize(window.innerHeight, window.innerHeight);
+        });
+
+    </script>
