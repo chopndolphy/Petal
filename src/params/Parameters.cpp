@@ -16,6 +16,15 @@ apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
     filterCutoff = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterCutoff");
     filterRes = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterRes");
     filterType = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterType");
+
+    /*
+    for (int i = 0; i < 8; i++)
+    {
+        tapState[i] = std::make_unique<ParameterInstance>(audioProcessor, *this, "tapState");
+        tapReverbAmt[i] = std::make_unique<ParameterInstance>(audioProcessor, *this, "tapReverbAmt");
+
+    }
+    */
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout

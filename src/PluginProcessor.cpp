@@ -135,6 +135,10 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+        petal.setTime(800, 1200, 1, 1, 
+            0, 0, 0, 0, false);
+        petal.setWindowSize(200);
+        
         petal.setPitchShifter(0, 12);
         petal.setPitchShifter(1, -5);
         petal.setPitchShifter(2, 4);
