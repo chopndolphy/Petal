@@ -33,8 +33,8 @@ public:
     filterRes,
     filterType;
 
-//    std::array<std::unique_ptr<ParameterInstance>, 8> 
-//    tapState, tapReverbAmt;
+    std::array<std::unique_ptr<ParameterInstance>, 8> 
+    tapShiftAmt; // tapReverbAmt;
     
 };
 

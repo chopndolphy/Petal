@@ -139,15 +139,9 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
             0, 0, 0, 0, false);
         petal.setWindowSize(200);
         
-        petal.setPitchShifter(0, 12);
-        petal.setPitchShifter(1, -5);
-        petal.setPitchShifter(2, 4);
-        petal.setPitchShifter(3, -12);
-        petal.setPitchShifter(4, 0);
-        petal.setPitchShifter(5, -8);
-        petal.setPitchShifter(6, 12);
-        petal.setPitchShifter(7, 0);
-
+        for(int tap = 0; tap < 8; tap++){
+            petal.setPitchShifter(tap, params->tapShiftAmt[tap]->get());
+        }
 
         petal.processBlock(buffer);
 

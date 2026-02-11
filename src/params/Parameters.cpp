@@ -3,6 +3,13 @@
 Parameters::Parameters(PetalAudioProcessor& p) : audioProcessor(p),
 apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
 {
+
+    for (int tap = 0; tap < 8; tap++)
+    {
+        auto tapShiftAmtID = "tapShiftAmt" + juce::String(tap);
+        tapShiftAmt[tap] = std::make_unique<ParameterInstance>(audioProcessor, *this, tapShiftAmtID);
+    }
+
     shiftAmount = std::make_unique<ParameterInstance>(audioProcessor, *this, "shiftAmount");
     windowSize = std::make_unique<ParameterInstance>(audioProcessor, *this, "windowSize");
     freeTimeL = std::make_unique<ParameterInstance>(audioProcessor, *this, "freeTimeL");
@@ -16,21 +23,22 @@ apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
     filterCutoff = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterCutoff");
     filterRes = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterRes");
     filterType = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterType");
-
-    /*
-    for (int i = 0; i < 8; i++)
-    {
-        tapState[i] = std::make_unique<ParameterInstance>(audioProcessor, *this, "tapState");
-        tapReverbAmt[i] = std::make_unique<ParameterInstance>(audioProcessor, *this, "tapReverbAmt");
-
-    }
-    */
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout
 Parameters::createParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
+
+    for(int tap = 0; tap < 8; tap++)
+    {
+        auto tapShiftAmtID = "tapShiftAmt" + juce::String(tap);
+        auto tapShiftAmtName = "Tap " + juce::String(tap) + " Shift Amount";
+
+        layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID {tapShiftAmtID, 1},
+                                                            tapShiftAmtName,
+                                                             -24, 24, 0));
+    }
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "shiftAmount", 1},
                                                            "Shift Amount",
