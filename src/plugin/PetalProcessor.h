@@ -108,7 +108,6 @@ public:
         tp[tap].phaseInv = tp[tap].phase + 0.5;
         if (tp[tap].phaseInv >= 1.0f) tp[tap].phaseInv -= 1.0f;
         if (tp[tap].phaseInv <= 0.0f) tp[tap].phaseInv += 1.0f;
-
     }
 
     void setPitchShifter(int tap, int shiftAmountInSemitones)

@@ -1,7 +1,4 @@
 
-
-
-
 let eventCount = 0;
 
     document.addEventListener("click", () => {

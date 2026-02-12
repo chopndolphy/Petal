@@ -1,66 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <style>
-        body { margin: 0; overflow: hidden; }
-        canvas { display: block; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+    <h1>Hello, world</h1>    
+    <div id="app"></div>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel" data-type="module" src="app.jsx"></script>
 
-        // Create a semicircular arc
 
-        let curves = []
-        let lines = []
-        for (let i = 0; i < 8; i++){
-            const curve = new THREE.EllipseCurve(
-                0, 0,              // center x, y
-                1 + i * 0.25, 1 + i * 0.25,              // x radius, y radius
-                0, Math.PI,        // start angle, end angle
-                false,             // clockwise
-                0                  // rotation
-            );
-            curves.push(curve);
-
-        }
-        for (let i = 0; i < 8; i++){
-
-            const points = curves[i].getPoints(50);
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            const material = new THREE.LineBasicMaterial({ color: 0xFFFFFF });
-            const line = new THREE.Line(geometry, material);
-            scene.add(line);
-            lines.push(line);
-        }
-
-        camera.position.z = 5;
-
-        // Animation loop
-        function animate() {
-            requestAnimationFrame(animate);
-            for (let i = 0; i < 8; i++)
-            {
-                lines[i].position.z -= 0.01;
-            }
-            renderer.render(scene, camera);
-        }
-        animate();
-        
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerHeight / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerHeight, window.innerHeight);
-        });
-
-    </script>
 </body>
 </html>

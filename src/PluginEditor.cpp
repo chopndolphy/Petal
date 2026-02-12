@@ -56,9 +56,7 @@ PetalAudioProcessorEditor::PetalAudioProcessorEditor (PetalAudioProcessor& p)
 {
     addAndMakeVisible(webview);
 
-   // juce::URL url (juce::File::getSpecialLocation(juce::File::userDesktopDirectory).getChildFile ("foo.bar"));
-  //  webview.goToURL("file:///Users/tmatsui1/GitHub/Petal/resource/index.html");  
-    webview.goToURL(webview.getResourceProviderRoot());
+    webview.goToURL("file:///Users/tmatsui1/GitHub/Petal/resource/index.html");  
     setSize (700, 350);
     startTimerHz(30);
 
@@ -77,7 +75,7 @@ void PetalAudioProcessorEditor::paint (juce::Graphics& g)
 
 void PetalAudioProcessorEditor::resized()
 {
-    webview.setBounds(0, 0, getLocalBounds().getHeight(), getLocalBounds().getHeight());
+    webview.setBounds(0, 0, getLocalBounds().getWidth(), getLocalBounds().getHeight());
 }
 
 auto PetalAudioProcessorEditor::getResource(const juce::String& url) -> std::optional<juce::WebBrowserComponent::Resource>
