@@ -62,8 +62,7 @@ double PetalAudioProcessor::getTailLengthSeconds() const
 
 int PetalAudioProcessor::getNumPrograms()
 {
-    return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
-                // so this should be at least 1, even if you're not really implementing programs.
+    return 1;   
 }
 
 int PetalAudioProcessor::getCurrentProgram()
@@ -87,10 +86,9 @@ void PetalAudioProcessor::changeProgramName (int index, const juce::String& newN
 //==============================================================================
 void PetalAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-  //  ps.prepareToPlay(sampleRate, samplesPerBlock);
-  //  rv.prepareToPlay(sampleRate, samplesPerBlock);
+    rvb.prepareToPlay(sampleRate, samplesPerBlock);
 
-    petal.prepareToPlay(sampleRate, samplesPerBlock);
+//    petal.prepareToPlay(sampleRate, samplesPerBlock);
 
 }
 
@@ -134,17 +132,20 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
+    /*
+    petal.setTime(800, 1200, 1, 1,
+        0, 0, 0, 0, false);
+    petal.setWindowSize(200);
 
-        petal.setTime(800, 1200, 1, 1, 
-            0, 0, 0, 0, false);
-        petal.setWindowSize(200);
-        
-        for(int tap = 0; tap < 8; tap++){
-            petal.setPitchShifter(tap, params->tapShiftAmt[tap]->get());
-        }
 
-        petal.processBlock(buffer);
+    for(int tap = 0; tap < 8; tap++){
+        petal.setPitchShifter(tap, params->tapShiftAmt[tap]->get());
+    }
 
+    petal.processBlock(buffer);
+    */
+    rvb.setDecayTime(2000, 8000);
+    rvb.processBlock(buffer);
 }
 
 //==============================================================================

@@ -5,96 +5,121 @@
 class MyVerb
 {
 public:
+
+    MyVerb(){}
+
     void prepareToPlay(double sampleRate, int samplesPerBlock) 
     {
+        this->sampleRate = sampleRate;
+        lpL.prepareToPlay(sampleRate);
+        lpR.prepareToPlay(sampleRate);
+        hpL.prepareToPlay(sampleRate);
+        hpR.prepareToPlay(sampleRate);
+        hpL.setCoefficients(550, 0.707);
+        hpR.setCoefficients(550, 0.707);
 
-        lp1.prepareToPlay(sampleRate);
-        lp2.prepareToPlay(sampleRate);
-        lp3.prepareToPlay(sampleRate);
-        lp4.prepareToPlay(sampleRate);
+        difAp1.prepareToPlay(sampleRate, samplesPerBlock);
+        difAp2.prepareToPlay(sampleRate, samplesPerBlock);
+        difAp3.prepareToPlay(sampleRate, samplesPerBlock);
+        difAp4.prepareToPlay(sampleRate, samplesPerBlock);
+        difAp1.setValues(0.75, 5);
+        difAp2.setValues(0.75, 11);
+        difAp3.setValues(0.625, 17);
+        difAp4.setValues(0.625, 23);
 
-        ap1Mod.prepareToPlay(sampleRate, samplesPerBlock);
-        ap2Mod.prepareToPlay(sampleRate, samplesPerBlock);
-        ap1.prepareToPlay(sampleRate, samplesPerBlock);
-        ap2.prepareToPlay(sampleRate, samplesPerBlock);
-        ap3.prepareToPlay(sampleRate, samplesPerBlock);
-        ap4.prepareToPlay(sampleRate, samplesPerBlock);
-        ap5.prepareToPlay(sampleRate, samplesPerBlock);
-        ap6.prepareToPlay(sampleRate, samplesPerBlock);
+        modAp1.prepareToPlay(sampleRate, samplesPerBlock);
+        modAp2.prepareToPlay(sampleRate, samplesPerBlock);
+        modAp3.prepareToPlay(sampleRate, samplesPerBlock);
+        modAp4.prepareToPlay(sampleRate, samplesPerBlock);
+
+        // delay line specs:
 
         juce::dsp::ProcessSpec spec;
         spec.sampleRate = sampleRate;
-        spec.numChannels = 2;
+        spec.numChannels = 1;
         spec.maximumBlockSize = samplesPerBlock;
+        dlL.prepare(spec);
+        dlR.prepare(spec);
 
-        dl1.prepare(spec);
-        dl1.setMaximumDelayInSamples(sampleRate);
-        dl1.reset();
-
-        dl2.prepare(spec);
-        dl2.setMaximumDelayInSamples(sampleRate);
-        dl2.reset();
-
-        dl3.prepare(spec);
-        dl3.setMaximumDelayInSamples(sampleRate);
-        dl3.reset();
-
-        dl4.prepare(spec);
-        dl4.setMaximumDelayInSamples(sampleRate);
-        dl4.reset();
+        // calculate angles
+        modAngle1 = 0.15 / sampleRate;
+        modAngle2 = 0.1 / sampleRate;
     }
     
-    void setDecayTime() {}
+    void setDecayTime(float decayTimeInMs, float dampFreqInHz) { // placeholder
+        lpL.setCoefficients(dampFreqInHz, 0.707);
+        lpR.setCoefficients(dampFreqInHz, 0.707);
+        float decayInSamples = (decayTimeInMs / 1000.0f) * sampleRate;
 
-    void processSample(juce::AudioBuffer<float>& buffer)
+        // full loop length = delay line + allpass center delays
+        float loopLengthL = 3000.0f + 7.0f + 11.0f;  // dlL + modAp1 + modAp2
+        float loopLengthR = 5000.0f + 13.0f + 19.0f; // dlR + modAp3 + modAp4
+        float avgLoopLength = (loopLengthL + loopLengthR) * 0.5f;
+
+        float loopIterations = decayInSamples / avgLoopLength;
+        feedBackAmount = std::exp(-6.9077552789821f / loopIterations);
+    }
+
+    static constexpr float epsilon = 1e-6f; // safety for dividing by 0
+
+    void processBlock(juce::AudioBuffer<float>& buffer)
     {
+        auto left = buffer.getReadPointer(0);
+        auto right = buffer.getReadPointer(1);
 
-        for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
         {
-            auto left = buffer.getReadPointer(0);
-            auto right = buffer.getReadPointer(1);
+            float x = (left[sample] + right[sample]) * 0.5f;
+            float diffusion = difAp4.processSample(difAp3.processSample(difAp2.processSample(difAp1.processSample(x))));
 
-            for (int sample = 0; sample < buffer.getNumSamples(); ++sample){
+            // calculate modulation
+            float lfo1 = std::abs(modPhase1 - 0.5f) * 4.0 - 1; // polarity
+            float lfo2 = std::abs(modPhase2 - 0.5f) * 4.0 - 1; 
 
-                float a = (left[sample] + right[sample]) * bandwidth;
-                float b = lp1.processSample(a);
-            
-                float diffusion = ap4.processSample(ap3.processSample(ap2.processSample(ap1.processSample(b))));
+            modAp1.setValues(0.5, 7 + lfo1 * 5);
+            modAp2.setValues(0.5, 11 + lfo2 * 6);
+            modAp3.setValues(0.5, 13 + lfo1 * 5);
+            modAp4.setValues(0.5, 19 + lfo2 * 9);
 
-                dl1.pushSample(0, (ap1Mod.processSample(diffusion))); 
-                float tank1A = ap5.processSample(lp3.processSample(dl1.popSample(0, 500))); 
-                dl2.pushSample(0, tank1A);
-                float tank1B = dl2.popSample(0, 500) * 0.5f;
+            // left
+            float apL1 = modAp1.processSample(diffusion + feedbackR);
+            float apL2 = modAp2.processSample(apL1);
+            float _lpL = lpL.processSample(apL2, 0);
+            float _hpL = hpL.processSample(_lpL, 2);
+            dlL.pushSample(0, _lpL * feedBackAmount);
+            feedbackL = dlL.popSample(0, 3000); 
 
-                dl3.pushSample(0, (ap2Mod.processSample(tank1B))); 
-                float tank2A = ap6.processSample(lp4.processSample(dl3.popSample(0, 500))); 
-                dl4.pushSample(0, tank1A);
-                float tank2B = dl4.popSample(0, 500) * 0.5f;
+            // right
+            float apR1 = modAp3.processSample(diffusion + feedbackL);
+            float apR2 = modAp4.processSample(apR1);
+            float _lpR = lpR.processSample(apR2, 0);
+            float _hpR = hpR.processSample(_lpR, 2);
+            dlR.pushSample(0, _lpR * feedBackAmount);
+            feedbackR = dlR.popSample(0, 5000);
 
-                buffer.addSample(channel, sample, tank2B/2);
-            }
+
+            // increment lfo
+            modPhase1 += modAngle1; if (modPhase1 >= 1.0) modPhase1 -= 1.0; 
+            modPhase2 += modAngle2; if (modPhase2 >= 1.0) modPhase2 -= 1.0;
+
+            buffer.addSample(0, sample, _hpL);
+            buffer.addSample(1, sample, _hpR);
         }
     }
 
 private: 
-    float bandwidth = 0.5f, damping = 0.5, decay = 0.9f;
+    double sampleRate;
+    float bandwidth = 0.5f, damping = 0.5, decay = 0.9f, feedBackAmount = 0.92f;
+    float feedbackL = 0.0f, feedbackR = 0.0f;
 
-    LPF lp1, lp2, lp3, lp4;
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> dlL, dlR;
+    SVF lpL, lpR, hpL, hpR;
+    APF difAp1, difAp2, difAp3, difAp4,
+    modAp1, modAp2, modAp3, modAp4;
 
-    APF 
-    ap1Mod { 0.7f, 1343, true }, 
-    ap2Mod { 0.7f, 995, true }, 
-    ap1 { 0.75, 210, false },
-    ap2 { 0.75, 158, false },
-    ap3 { 0.625, 561, false },
-    ap4 { 0.625, 410, false },
-    ap5 { 0.5, 3931, false },
-    ap6 { 0.5, 2664, false };
-
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> 
-    dl1, 
-    dl2, 
-    dl3, 
-    dl4;
+    double modPhase1 = 0.0, 
+    modAngle1 = 0.0, 
+    modPhase2 = 0.0, 
+    modAngle2; 
 
 };

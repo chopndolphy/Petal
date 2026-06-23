@@ -8,13 +8,6 @@ public:
         y[n] = -g*x[n] + x[n-d] + g*y[n-d]
     */ 
 
-    APF(float gain, int delayInSamples, bool isModulated)
-    {
-        this->gain = gain;
-        this->delayInSamples = delayInSamples;
-        this->isModulated = isModulated;
-    }
-
     void prepareToPlay(double sampleRate, int maximumBlockSize)
     {
         this->sampleRate = sampleRate;
@@ -29,19 +22,15 @@ public:
         dl.reset();
     }
 
-    void advancePhase()
-    {
-        double incr = rateInHz/sampleRate;
-        phase += incr;
-        if (phase >= 1.0) { phase -= 1.0; }
+    float setValues(float gain, float delayInMilliseconds){ 
+        this->gain = gain;
+        delayInSamples = static_cast<int>(std::round((delayInMilliseconds / 1000.0) * sampleRate));
     }
 
     float processSample(float x)
     {
-        float delayTime = phase * 16;
-        float y = -gain * x + dl.popSample(0, delayTime);
+        float y = -gain * x + dl.popSample(0, delayInSamples); 
         dl.pushSample(0, x + gain * y);  
-        if (isModulated) { advancePhase(); }
         
         return y;
     }
@@ -49,42 +38,61 @@ public:
 private: 
     double sampleRate, phase;
     bool isModulated = false;
-    int delayInSamples; 
-    float rateInHz, gain;
+    int delayInSamples;
+    float gain;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> dl;
 };
 
 
-class LPF
-{
-public: 
-    /*
-        This class implements the difference equation: 
-        y[n] = (1-g) * x[n] + g * y[n-1]
-    */ 
-   
-    void setCutoffInHz(float cutoffInHz)
-    {
-        float omega = 2.0f * M_PI * cutoffInHz / sampleRate;
-        this->gain = std::expf(-omega);
-    }
 
-    void prepareToPlay(double sampleRate)
-    {
+class SVF {
+public:
+    void prepareToPlay(float sampleRate) {
         this->sampleRate = sampleRate;
-        
     }
 
-    float processSample(float x)
+    void setCoefficients(float cf, float q)
     {
-        float y = (1.0f - gain) * x + gain * lastY;
-        lastY = y;
+        g = math.tan(M_PI * cf / sampleRate);
+        k = 1.0f / q;
+        a1 = 1.0f / (1.0f + g * (g + k));
+        a2 = g * a1;
+        a3 = g * a2;
+    }
 
+    void reset()
+    {
+        g = 0.0f , k = 0.0f, a1 = 0.0f, a2 = 0.0f, a3 = 0.0f;
+        z1 = 0.0f, z2 = 0.0f;
+    }
+
+    float processSample(float x, int type) noexcept
+    {
+        float v3 = x - z2;
+        float v1 = a1 * z1 + a2 * v3;
+        float v2 = z2 + a2 * z1 + a3 * v3;
+
+        z1 = 2.0f * v1 - z1;
+        z2 = 2.0f * v2 - z2;
+
+        float y;
+        switch (type){
+            case 0: // LP
+                y = v2;
+                break;
+
+            case 1: // BP
+                y = v1 * k;
+                break;
+
+            case 2: // HP
+                y = x - k * v1 - v2;
+                break;
+        }
         return y;
     }
 
-private: 
-    double sampleRate, phase = 0.0;
-    float gain = 0.5, lastY = 0.0f;
-    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> dl;
+    double sampleRate;
+    float g, k, a1, a2, a3, z1, z2;
+    juce::dsp::FastMathApproximations math;
 };

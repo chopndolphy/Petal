@@ -10,7 +10,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 // #include "dsp/PitchShifter.h"
-// #include "dsp/reverb/Reverb.h"
+#include "dsp/reverb/Reverb.h"
 #include "params/Parameters.h"
 #include "plugin/PetalProcessor.h"
 
@@ -63,6 +63,7 @@ public:
 private:
 
     std::array<std::atomic<float>, 8> tapAmplitudes;
+    MyVerb rvb;
  //   PitchShifter ps;
  //  MyVerb rv;
     //==============================================================================
