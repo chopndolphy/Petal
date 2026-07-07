@@ -17,21 +17,21 @@ private:
 public:
     juce::AudioProcessorValueTreeState apvts;
 
-    
     std::unique_ptr<ParameterInstance>
-    shiftAmount, windowSize,
+        freeTimeL,
+        freeTimeR,
+        
+        positionL, 
+        skewL,
+        positionR,
+        skewR,
+        
+        windowSize,
 
-    freeTimeL,
-    freeTimeR,
-    syncTimeL,
-    syncTimeR,
-    reverbDecayTime,
-    reverbLevel,
-    pitchShiftWindowSize,
-    pitchShiftJitterAmount,
-    filterCutoff,
-    filterRes,
-    filterType;
+        reverbDecayTime,
+        reverbSize,
+        reverbDampening,
+        reverbLevel;
 
     std::array<std::unique_ptr<ParameterInstance>, 8> 
     tapShiftAmt; // tapReverbAmt;

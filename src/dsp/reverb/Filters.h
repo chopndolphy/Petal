@@ -36,10 +36,10 @@ public:
     }
 
 private: 
-    double sampleRate, phase;
+    double sampleRate = 48000.0, phase = 0.0;
     bool isModulated = false;
-    int delayInSamples;
-    float gain;
+    int delayInSamples = 24;
+    float gain = 0.5f;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> dl;
 };
 
@@ -49,6 +49,7 @@ class SVF {
 public:
     void prepareToPlay(float sampleRate) {
         this->sampleRate = sampleRate;
+        reset();
     }
 
     void setCoefficients(float cf, float q)
@@ -92,7 +93,7 @@ public:
         return y;
     }
 
-    double sampleRate;
-    float g, k, a1, a2, a3, z1, z2;
+    double sampleRate = 48000.0;
+    float g = 0.0f, k = 0.0f, a1 = 0.0f, a2 = 0.0f, a3 = 0.0f, z1 = 0.0f, z2 = 0.0f;
     juce::dsp::FastMathApproximations math;
 };

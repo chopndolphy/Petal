@@ -86,10 +86,8 @@ void PetalAudioProcessor::changeProgramName (int index, const juce::String& newN
 //==============================================================================
 void PetalAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    petal.prepareToPlay(sampleRate, samplesPerBlock);
     rvb.prepareToPlay(sampleRate, samplesPerBlock);
-
-//    petal.prepareToPlay(sampleRate, samplesPerBlock);
-
 }
 
 void PetalAudioProcessor::releaseResources()
@@ -120,11 +118,6 @@ bool PetalAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
 void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     
-    /*
-    ps.setAttributes(params->shiftAmount->get(),
-                     params->windowSize->get(),
-                     0.0f);
-*/
 
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -132,20 +125,33 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
-    /*
-    petal.setTime(800, 1200, 1, 1,
-        0, 0, 0, 0, false);
-    petal.setWindowSize(200);
 
+    petal.setTime(params->freeTimeL->get(),
+                  params->freeTimeR->get(),
+                  1, // syncL
+                  1, 
+                  params->positionL->get(),
+                  params->skewL->get(),
+                  params->positionR->get(),
+                  params->skewR->get(),
+                  false);
+
+    petal.setWindowSize(params->windowSize->get());
 
     for(int tap = 0; tap < 8; tap++){
         petal.setPitchShifter(tap, params->tapShiftAmt[tap]->get());
     }
 
     petal.processBlock(buffer);
-    */
-    rvb.setDecayTime(2000, 8000);
+    
+    
+    rvb.setValues(params->reverbLevel->get(),
+                  params->reverbDecayTime->get() * 200.0f,
+                  300.0f + params->reverbDampening->get() * 16000.0f,
+                  params->reverbSize->get());
+
     rvb.processBlock(buffer);
+    
 }
 
 //==============================================================================

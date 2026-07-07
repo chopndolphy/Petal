@@ -10,19 +10,25 @@ apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
         tapShiftAmt[tap] = std::make_unique<ParameterInstance>(audioProcessor, *this, tapShiftAmtID);
     }
 
-    shiftAmount = std::make_unique<ParameterInstance>(audioProcessor, *this, "shiftAmount");
-    windowSize = std::make_unique<ParameterInstance>(audioProcessor, *this, "windowSize");
+    // time
     freeTimeL = std::make_unique<ParameterInstance>(audioProcessor, *this, "freeTimeL");
     freeTimeR = std::make_unique<ParameterInstance>(audioProcessor, *this, "freeTimeR");
-    syncTimeL = std::make_unique<ParameterInstance>(audioProcessor, *this, "syncTimeL");
-    syncTimeR = std::make_unique<ParameterInstance>(audioProcessor, *this, "syncTimeR");
+
+    // shaping
+    positionL = std::make_unique<ParameterInstance>(audioProcessor, *this, "positionL");
+    skewL = std::make_unique<ParameterInstance>(audioProcessor, *this, "skewL");
+    positionR = std::make_unique<ParameterInstance>(audioProcessor, *this, "positionR");
+    skewR = std::make_unique<ParameterInstance>(audioProcessor, *this, "skewR");
+
+    // window
+    windowSize = std::make_unique<ParameterInstance>(audioProcessor, *this, "windowSize");
+
+    // reverb
     reverbDecayTime = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbDecayTime");
+    reverbSize = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbSize");
+    reverbDampening = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbDampening");
     reverbLevel = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbLevel");
-    pitchShiftWindowSize = std::make_unique<ParameterInstance>(audioProcessor, *this, "pitchShiftWindowSize");
-    pitchShiftJitterAmount = std::make_unique<ParameterInstance>(audioProcessor, *this, "pitchShiftJitterAmount");
-    filterCutoff = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterCutoff");
-    filterRes = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterRes");
-    filterType = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterType");
+
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout
@@ -34,63 +40,65 @@ Parameters::createParameterLayout()
     {
         auto tapShiftAmtID = "tapShiftAmt" + juce::String(tap);
         auto tapShiftAmtName = "Tap " + juce::String(tap) + " Shift Amount";
-
         layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID {tapShiftAmtID, 1},
                                                             tapShiftAmtName,
-                                                             -24, 24, 0));
+                                                             -12, 12, 0));
     }
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "shiftAmount", 1},
-                                                           "Shift Amount",
-                                                           juce::NormalisableRange<float> { 0.0f, 2.0f, 0.01 }, 1.0f));
-
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "windowSize", 1},
-                                                           "Window Size",
-                                                           juce::NormalisableRange<float> { 0.25f, 100.0f, 0.1 }, 50.0f));
-
+    // time                 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "freeTimeL", 1},
-                                                           "Free Time Left",
-                                                           juce::NormalisableRange<float> { 0.0f, 2.0f, 0.01 }, 1.0f));
+                                                           "Free Time L",
+                                                           juce::NormalisableRange<float> { 5.0f, 20000.0f, 0.01 }, 100.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "freeTimeR", 1},
-                                                           "Free Time Right",
-                                                           juce::NormalisableRange<float> { 0.0f, 2.0f, 0.01 }, 1.0f));
+                                                           "Free Time R",
+                                                           juce::NormalisableRange<float> { 5.0f, 20000.0f, 0.01 }, 100.0f));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "syncTimeL", 1},
-                                                           "Sync Time Left",
-                                                           juce::NormalisableRange<float> { 0.0f, 2.0f, 0.01 }, 1.0f));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "syncTimeR", 1},
-                                                           "Sync Time Right",
-                                                           juce::NormalisableRange<float> { 0.0f, 2.0f, 0.01 }, 1.0f));
 
+
+    // shaping
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "positionL", 1},
+                                                           "Position L",
+                                                           juce::NormalisableRange<float> { 0.0f, 1.0f, 0.01 }, 1.0f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"skewL", 1},
+                                                           "Skew L",
+                                                           juce::NormalisableRange<float>{ -1.0f, 1.0f, 0.01}, 1.0f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"positionR", 1},
+                                                           "Position R",
+                                                           juce::NormalisableRange<float>{ 0.0f, 1.0f, 0.01}, 1.0f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"skewR", 1},
+                                                           "Skew R",
+                                                           juce::NormalisableRange<float>{ -1.0f, 1.0f, 0.01}, 1.0f));
+
+
+    // window size
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"windowSize", 1},
+                                                           "Window Size",
+                                                           juce::NormalisableRange<float>{10.0f, 200.0f, 0.1}, 50.0f));
+
+
+    // reverb 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "reverbDecayTime", 1},
                                                            "Reverb Decay Time",
-                                                           juce::NormalisableRange<float> { 0.0f, 2.0f, 0.01 }, 1.0f));
+                                                           juce::NormalisableRange<float> { 0.0f, 1.0f, 0.01 }, 1.0f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"reverbSize", 1},
+                                                           "Reverb Size",
+                                                           juce::NormalisableRange<float>{0.0f, 1.0f, 0.01}, 1.0f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"reverbDampening", 1},
+                                                           "Reverb Dampening",
+                                                           juce::NormalisableRange<float>{0.0f, 1.0f, 0.01}, 1.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "reverbLevel", 1},
                                                            "Reverb Level",
-                                                           juce::NormalisableRange<float> { 0.0f, 2.0f, 0.01 }, 1.0f));
+                                                           juce::NormalisableRange<float> { 0.0f, 1.0f, 0.01 }, 1.0f));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "pitchShiftWindowSize", 1},
-                                                           "Pitch Shift Window Size",
-                                                           juce::NormalisableRange<float> { 0.0f, 2.0f, 0.01 }, 1.0f));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "pitchShiftJitterAmount", 1},
-                                                           "Pitch Shift Jitter Amount",
-                                                           juce::NormalisableRange<float> { 0.0f, 2.0f, 0.01 }, 1.0f));
-
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "filterCutoff", 1},
-                                                           "Filter Cutoff",
-                                                           juce::NormalisableRange<float> { 0.0f, 2.0f, 0.01 }, 1.0f));
-
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "filterRes", 1},
-                                                           "Filter Resonance",
-                                                           juce::NormalisableRange<float> { 0.0f, 2.0f, 0.01 }, 1.0f));
-
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "filterType", 1},
-                                                           "Filter Type",
-                                                           juce::NormalisableRange<float> { 0.0f, 2.0f, 0.01 }, 1.0f));
     return layout;
 }
 

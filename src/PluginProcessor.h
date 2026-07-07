@@ -58,14 +58,12 @@ public:
 
         std::unique_ptr<Parameters> params;
 
-            PetalProcessor petal;
+        PetalProcessor petal;
 
 private:
 
     std::array<std::atomic<float>, 8> tapAmplitudes;
     MyVerb rvb;
- //   PitchShifter ps;
- //  MyVerb rv;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PetalAudioProcessor)
 };
