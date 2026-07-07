@@ -8,6 +8,9 @@ apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
     {
         auto tapShiftAmtID = "tapShiftAmt" + juce::String(tap);
         tapShiftAmt[tap] = std::make_unique<ParameterInstance>(audioProcessor, *this, tapShiftAmtID);
+
+        auto tapReverbAmtID = "tapReverbAmt" + juce::String(tap);
+        tapReverbAmt[tap] = std::make_unique<ParameterInstance>(audioProcessor, *this, tapReverbAmtID);
     }
 
     // time
@@ -39,10 +42,16 @@ Parameters::createParameterLayout()
     for(int tap = 0; tap < 8; tap++)
     {
         auto tapShiftAmtID = "tapShiftAmt" + juce::String(tap);
-        auto tapShiftAmtName = "Tap " + juce::String(tap) + " Shift Amount";
+        auto tapShiftAmtName = "Tap " + juce::String(tap + 1) + " Shift Amount";
         layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID {tapShiftAmtID, 1},
                                                             tapShiftAmtName,
                                                              -12, 12, 0));
+
+        auto tapReverbAmtID = "tapReverbAmt" + juce::String(tap);
+        auto tapReverbAmtName = "Tap " + juce::String(tap + 1) + " Reverb Amount";
+        layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{tapReverbAmtID, 1},
+                                                               tapReverbAmtName,
+                                                               juce::NormalisableRange<float>{0.0f, 1.0, 0.01}, 1.0f));
     }
 
     // time                 

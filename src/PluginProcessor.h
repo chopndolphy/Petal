@@ -63,7 +63,6 @@ public:
 private:
 
     std::array<std::atomic<float>, 8> tapAmplitudes;
-    MyVerb rvb;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PetalAudioProcessor)
 };

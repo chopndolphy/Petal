@@ -87,7 +87,6 @@ void PetalAudioProcessor::changeProgramName (int index, const juce::String& newN
 void PetalAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     petal.prepareToPlay(sampleRate, samplesPerBlock);
-    rvb.prepareToPlay(sampleRate, samplesPerBlock);
 }
 
 void PetalAudioProcessor::releaseResources()
@@ -123,8 +122,9 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear (i, 0, buffer.getNumSamples());
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i){
+        buffer.clear(i, 0, buffer.getNumSamples());
+    }
 
     petal.setTime(params->freeTimeL->get(),
                   params->freeTimeR->get(),
@@ -138,20 +138,18 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
 
     petal.setWindowSize(params->windowSize->get());
 
+    petal.rvb.setValues(params->reverbLevel->get(),
+                        params->reverbDecayTime->get() * 200.0f,
+                        300.0f + params->reverbDampening->get() * 16000.0f,
+                        params->reverbSize->get());
+
+
     for(int tap = 0; tap < 8; tap++){
-        petal.setPitchShifter(tap, params->tapShiftAmt[tap]->get());
+        petal.setValues(tap, 
+                        params->tapShiftAmt[tap]->get(), 
+                        params->tapReverbAmt[tap]->get());
     }
-
     petal.processBlock(buffer);
-    
-    
-    rvb.setValues(params->reverbLevel->get(),
-                  params->reverbDecayTime->get() * 200.0f,
-                  300.0f + params->reverbDampening->get() * 16000.0f,
-                  params->reverbSize->get());
-
-    rvb.processBlock(buffer);
-    
 }
 
 //==============================================================================

@@ -1,19 +1,22 @@
 #include <JuceHeader.h>
 #include "../dsp/Delayline.h"
+#include "../dsp/reverb/Reverb.h"
 
 class PetalProcessor
 {
 public:
     PetalProcessor() {}
 
-    void prepareToPlay(double sampleRate, int maximumBlockSize)
+    void prepareToPlay(double sampleRate, int samplesPerBlock)
     {
+        this->sampleRate = sampleRate;
         dlL.setMaximumDelayInSamples(sampleRate * 10);
         dlR.setMaximumDelayInSamples(sampleRate * 10);
         dlL.reset();
         dlR.reset();
 
-        this->sampleRate = sampleRate;
+        rvb.prepareToPlay(sampleRate, samplesPerBlock);
+        rvbBuffer.setSize(2, samplesPerBlock, false, false, true); 
     }
 
     static float warpTapPosition(float basePos, float pos, float exponent)
@@ -76,6 +79,8 @@ public:
     {
         auto readDataL = buffer.getReadPointer(0);
         auto readDataR = buffer.getReadPointer(1);
+        rvbBuffer.setSize(2, buffer.getNumSamples(), false, false, true); 
+        rvbBuffer.clear();
 
         const float gain = 2.0f / (float)numOverlaps;
 
@@ -87,9 +92,10 @@ public:
             for (int tap = 0; tap < 8; tap++)
             {
                 advancePhase(tap);
-
                 float pitchShiftedL = 0.0f;
                 float pitchShiftedR = 0.0f;
+                float reverbTapL = 0.0f;
+                float reverbTapR = 0.0f;
 
                 for (int sub = 0; sub < numOverlaps; sub++)
                 {
@@ -98,9 +104,9 @@ public:
                         phase -= 1.0f;
 
                     float window = 0.5f * (1.0f - std::cos(2.0f * pi * phase));
-                    float sweep = windowSizeInSamples * phase;
-                    float delayL = tp[tap].freeTimeL + sweep;
-                    float delayR = tp[tap].freeTimeR + sweep;
+                    float windowPos = windowSizeInSamples * phase;
+                    float delayL = tp[tap].freeTimeL + windowPos;
+                    float delayR = tp[tap].freeTimeR + windowPos;
 
                     pitchShiftedL += dlL.readSample(delayL) * window;
                     pitchShiftedR += dlR.readSample(delayR) * window;
@@ -108,8 +114,14 @@ public:
 
                 buffer.addSample(0, sample, pitchShiftedL * gain);
                 buffer.addSample(1, sample, pitchShiftedR * gain);
+                rvbBuffer.addSample(0, sample, pitchShiftedL * gain * tp[tap].reverbAmount);
+                rvbBuffer.addSample(1, sample, pitchShiftedR * gain * tp[tap].reverbAmount);
             }
         }
+
+        rvb.processBlock(rvbBuffer);
+        buffer.addFrom(0, 0, rvbBuffer, 0, 0, buffer.getNumSamples());
+        buffer.addFrom(1, 0, rvbBuffer, 1, 0, buffer.getNumSamples());
     }
 
     void advancePhase(int tap)
@@ -122,10 +134,11 @@ public:
         if (tp[tap].phase <= 0.0f) tp[tap].phase += 1.0f;
     }
 
-    void setPitchShifter(int tap, int shiftAmountInSemitones)
+    void setValues(int tap, int shiftAmountInSemitones, float reverbAmount)
     {
         float shiftAmount = std::exp(0.057762265f * shiftAmountInSemitones);
         tp[tap].shiftAmount = shiftAmount;
+        tp[tap].reverbAmount = reverbAmount;
     }
 
     void setWindowSize(int windowSizeInMilliseconds)
@@ -135,7 +148,8 @@ public:
     }
 
     std::array<std::atomic<float>, 8> amplitudesL, amplitudesR;
-
+    MyVerb rvb; // its public
+    juce::AudioBuffer<float> rvbBuffer;
 private:
     static constexpr int numOverlaps = 4;
 
@@ -150,7 +164,7 @@ private:
         float freeTimeL = 1.0f;
         float freeTimeR = 1.0f;
         float shiftAmount = 1.0f;
-        float reverbAmt = 0.0f;
+        float reverbAmount = 0.0f;
     };
 
     std::array<tapAttributes, 8> tp;
@@ -167,4 +181,5 @@ private:
     float windowSizeInSamples = (float)(sampleRate / 2), windowSizeInMilliseconds = 200.0;
     bool feedbackSuppression = false;
     Delayline dlL, dlR;
+
 };

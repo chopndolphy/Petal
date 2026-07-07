@@ -34,7 +34,7 @@ public:
         reverbLevel;
 
     std::array<std::unique_ptr<ParameterInstance>, 8> 
-    tapShiftAmt; // tapReverbAmt;
+    tapShiftAmt, tapReverbAmt; 
     
 };
 
