@@ -17,17 +17,35 @@ public:
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
-
-
-    void setValuesInWebview()
-    {
-        webview.emitEventIfBrowserIsVisible("reverbDecayTime", juce::JSON::toString(audioProcessor.params->reverbDecayTime->getSafe()));
-        webview.emitEventIfBrowserIsVisible("reverbLevel", juce::JSON::toString(audioProcessor.params->reverbLevel->getSafe()));
-    }
     
 private:
     PetalAudioProcessor& audioProcessor;
-    juce::WebBrowserComponent webview;
+
+    juce::WebSliderRelay
+        freeTimeLRelay { "freeTimeL" },
+        freeTimeRRelay { "freeTimeR" },
+        positionLRelay { "positionL" },
+        skewLRelay { "skewL" },
+        positionRRelay { "positionR" },
+        skewRRelay { "skewR" };
+
+    juce::WebBrowserComponent webview {
+        juce::WebBrowserComponent::Options{}
+            .withOptionsFrom (freeTimeLRelay)
+            .withOptionsFrom (freeTimeRRelay)
+            .withOptionsFrom (positionLRelay)
+            .withOptionsFrom (skewLRelay)
+            .withOptionsFrom (positionRRelay)
+            .withOptionsFrom (skewRRelay)
+            .withResourceProvider ([this] (const auto& url) { return getResource (url); })
+    };
+
+    WebSliderParameterAttachment freeTimeLAttachment { *audioProcessor.params->freeTimeL->getRangedAudioParameter(), freeTimeLRelay, nullptr };
+    WebSliderParameterAttachment freeTimeRAttachment  { *audioProcessor.params->freeTimeR->getRangedAudioParameter(),  freeTimeRRelay,  nullptr };
+    WebSliderParameterAttachment positionLAttachment { *audioProcessor.params->positionL->getRangedAudioParameter(), positionLRelay, nullptr };
+    WebSliderParameterAttachment skewLAttachment { *audioProcessor.params->skewL->getRangedAudioParameter(), skewLRelay, nullptr };
+    WebSliderParameterAttachment positionRAttachment { *audioProcessor.params->positionR->getRangedAudioParameter(), positionRRelay, nullptr };
+    WebSliderParameterAttachment skewRAttachment { *audioProcessor.params->skewR->getRangedAudioParameter(), skewRRelay, nullptr };
 
     auto getResource(const juce::String& url) -> std::optional<juce::WebBrowserComponent::Resource>;
     void timerCallback() override;

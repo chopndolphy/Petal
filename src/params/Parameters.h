@@ -52,7 +52,7 @@ public:
     //==============================================================================
     float get() const noexcept;
     float getSafe() const noexcept;
-
+    juce::RangedAudioParameter* getRangedAudioParameter() const noexcept;
 private:
     float valueSafe;
     std::atomic<float> value;

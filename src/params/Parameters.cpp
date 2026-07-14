@@ -57,11 +57,11 @@ Parameters::createParameterLayout()
     // time                 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "freeTimeL", 1},
                                                            "Free Time L",
-                                                           juce::NormalisableRange<float> { 5.0f, 20000.0f, 0.01 }, 100.0f));
+                                                           juce::NormalisableRange<float> { 5.0f, 10000.0f, 0.01 }, 100.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "freeTimeR", 1},
                                                            "Free Time R",
-                                                           juce::NormalisableRange<float> { 5.0f, 20000.0f, 0.01 }, 100.0f));
+                                                           juce::NormalisableRange<float> { 5.0f, 10000.0f, 0.01 }, 100.0f));
 
 
 
@@ -177,4 +177,9 @@ float ParameterInstance::get() const noexcept
 float ParameterInstance::getSafe() const noexcept
 {
     return valueSafe;
+}
+
+juce::RangedAudioParameter* ParameterInstance::getRangedAudioParameter() const noexcept 
+{
+    return rangedParam;
 }

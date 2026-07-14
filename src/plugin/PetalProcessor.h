@@ -51,6 +51,8 @@ public:
             float basePos = (1.0f / 8.0f) * tap;
             float warpedL = warpTapPosition(basePos, positionL, exponentL);
             float warpedR = warpTapPosition(basePos, positionR, exponentR);
+            delayTimesL[tap].store(warpedL);
+            delayTimesR[tap].store(warpedR);
 
             tp[tap].freeTimeL = warpedL * freeTimeLInSamples;
             tp[tap].freeTimeR = warpedR * freeTimeRInSamples;
@@ -148,6 +150,8 @@ public:
     }
 
     std::array<std::atomic<float>, 8> amplitudesL, amplitudesR;
+    std::array<std::atomic<float>, 8> delayTimesL, delayTimesR;
+
     MyVerb rvb; // its public
     juce::AudioBuffer<float> rvbBuffer;
 private:
@@ -166,7 +170,6 @@ private:
         float shiftAmount = 1.0f;
         float reverbAmount = 0.0f;
     };
-
     std::array<tapAttributes, 8> tp;
 
     static constexpr std::array<double, 19> syncTimeOptions = {

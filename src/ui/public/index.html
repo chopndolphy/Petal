@@ -1,11 +1,43 @@
+<!DOCTYPE html>
+<html>
+
 <head>
-    <meta charset="UTF-8">
-    <style>
-        body { margin: 0; overflow: hidden; }
-        canvas { display: block; }
-    </style>
-</head>
-<body>
-    <script>
-        <h1>Hey Hey</h1>
+    <title>Petal</title>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.176.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.176.0/examples/jsm/"
+        }
+    }
     </script>
+
+    <script type="module" src="./ui/delay_editor.js"></script>
+    <script type="module" src="./ui/reverb_editor.js"></script>
+    <script type="module" src="./ui/tap_editor.js"></script>
+    <script type="module" src="./event_listener.js"></script>
+
+</head>
+
+<body>
+    <main id="divvy">
+        <div style="display: flex; flex-direction: row">
+            <delay-editor></delay-editor>
+            <tap-editor></tap-editor>
+            <reverb-editor></reverb-editor>
+        </div>
+        <div style="display: flex; flex-direction: column">
+    </main>
+    <p id="consoleError"></p>
+    <canvas style="visibility: hidden" id="viewer" width="256" height="256"></canvas>
+    <canvas style="visibility: hidden" id="source" width="256" height="256"></canvas>
+</body>
+    <script>
+        let div = document.getElementById("divvy");
+        div.style.width = "900px";
+        div.style.height = "450px";
+        div.style.backgroundColor = "#161616";
+        div.style.borderRadius = "10px";
+
+    </script>
+</html>

@@ -116,8 +116,6 @@ bool PetalAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
 
 void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    
-
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
@@ -155,7 +153,7 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
 //==============================================================================
 bool PetalAudioProcessor::hasEditor() const
 {
-    return true; // (change this to false if you choose to not supply an editor)
+    return true; 
 }
 
 juce::AudioProcessorEditor* PetalAudioProcessor::createEditor()

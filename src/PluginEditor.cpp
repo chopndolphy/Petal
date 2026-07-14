@@ -46,22 +46,34 @@ static const char* getMimeForExtension(const juce::String& extension) {
 //==============================================================================
 PetalAudioProcessorEditor::PetalAudioProcessorEditor (PetalAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p), 
-    webview{juce::WebBrowserComponent::Options{}
+webview{juce::WebBrowserComponent::Options{}
     .withBackend(juce::WebBrowserComponent::Options::Backend::webview2)
     .withWinWebView2Options(juce::WebBrowserComponent::Options::WinWebView2{}
         .withUserDataFolder(juce::File::getSpecialLocation(juce::File::tempDirectory)))
-        
+    .withNativeIntegrationEnabled()          // make sure this is present too
+    .withOptionsFrom(freeTimeLRelay)
+    .withOptionsFrom(freeTimeRRelay)
+    .withOptionsFrom(positionLRelay)
+    .withOptionsFrom(skewLRelay)
+    .withOptionsFrom(positionRRelay)
+    .withOptionsFrom(skewRRelay)
     .withResourceProvider([this](const auto& url){
         return getResource(url);
     })}
-{
+    
+    {
     addAndMakeVisible(webview);
 
-    webview.goToURL("file:///Users/tmatsui1/GitHub/Petal/resource/index.html");  
-    setSize (700, 350);
+    webview.goToURL("http://localhost:4000");  
+    setSize(900, 450);
     startTimerHz(30);
 
-
+    freeTimeLAttachment.sendInitialUpdate();
+    freeTimeRAttachment.sendInitialUpdate();
+    positionLAttachment.sendInitialUpdate();
+    skewLAttachment.sendInitialUpdate();
+    positionRAttachment.sendInitialUpdate();
+    skewRAttachment.sendInitialUpdate();
 }
 
 PetalAudioProcessorEditor::~PetalAudioProcessorEditor()
@@ -94,23 +106,17 @@ auto PetalAudioProcessorEditor::getResource(const juce::String& url) -> std::opt
 
 void PetalAudioProcessorEditor::timerCallback()
 {
+    juce::var delayTimesL{juce::Array<juce::var>()};
+    juce::var delayTimesR{juce::Array<juce::var>()};
+    juce::var reverbLevelMsr;
 
-    
-    juce::var amplitudesL{juce::Array<juce::var>()};
-    juce::var amplitudesR{juce::Array<juce::var>()};
-
-    for (int i = 0; i < 8; i++){
-        int ampBoolL = audioProcessor.petal.amplitudesL[i].load() > 0 ? 20 : 0;
-        amplitudesL.append(ampBoolL);
-        amplitudesR.append(audioProcessor.petal.amplitudesR[i].load());
-
+    for (int tap = 0; tap < 8; tap++){
+        delayTimesL.append(audioProcessor.petal.delayTimesL[tap].load());
+        delayTimesR.append(audioProcessor.petal.delayTimesR[tap].load());
     }
-    
-    webview.emitEventIfBrowserIsVisible("amplitudesL", juce::JSON::toString(amplitudesL));
-    webview.emitEventIfBrowserIsVisible("amplitudesR", juce::JSON::toString(amplitudesR));
+    reverbLevelMsr = audioProcessor.petal.rvb.reverbLevelMsr.load();
 
-    setValuesInWebview();
-
-
-
+    webview.emitEventIfBrowserIsVisible("delayTimesL", juce::JSON::toString(delayTimesL));
+    webview.emitEventIfBrowserIsVisible("delayTimesR", juce::JSON::toString(delayTimesR));
+    webview.emitEventIfBrowserIsVisible("reverbLevelMsr", juce::JSON::toString(reverbLevelMsr));
 }

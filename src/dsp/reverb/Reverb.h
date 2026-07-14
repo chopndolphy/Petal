@@ -106,12 +106,15 @@ public:
             // write to outgoing buffer
             float outL = highPassL * level;
             float outR = highPassR * level;
-
             buffer.addSample(0, sample, outL);
             buffer.addSample(1, sample, outR);
+
+            // measurement to atomic
+            reverbLevelMsr.store((outL + outR)/2);
         }
     }
 
+    std::atomic<float> reverbLevelMsr;
 private: 
     double sampleRate = 48000.0;
     float level = 1.0f, damping = 0.5, decay = 0.9f, size = 1.0f, feedBackAmount = 0.95f;
