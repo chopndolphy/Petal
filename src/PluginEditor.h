@@ -27,7 +27,10 @@ private:
         positionLRelay { "positionL" },
         skewLRelay { "skewL" },
         positionRRelay { "positionR" },
-        skewRRelay { "skewR" };
+        skewRRelay { "skewR" },
+        reverbSizeRelay { "reverbSize" },
+        reverbDecayTimeRelay { "reverbDecayTime" },
+        reverbDampeningRelay { "reverbDampening" };
 
     juce::WebBrowserComponent webview {
         juce::WebBrowserComponent::Options{}
@@ -37,6 +40,9 @@ private:
             .withOptionsFrom (skewLRelay)
             .withOptionsFrom (positionRRelay)
             .withOptionsFrom (skewRRelay)
+            .withOptionsFrom (reverbSizeRelay)
+            .withOptionsFrom (reverbDecayTimeRelay)
+            .withOptionsFrom (reverbDampeningRelay)
             .withResourceProvider ([this] (const auto& url) { return getResource (url); })
     };
 
@@ -46,6 +52,9 @@ private:
     WebSliderParameterAttachment skewLAttachment { *audioProcessor.params->skewL->getRangedAudioParameter(), skewLRelay, nullptr };
     WebSliderParameterAttachment positionRAttachment { *audioProcessor.params->positionR->getRangedAudioParameter(), positionRRelay, nullptr };
     WebSliderParameterAttachment skewRAttachment { *audioProcessor.params->skewR->getRangedAudioParameter(), skewRRelay, nullptr };
+    WebSliderParameterAttachment reverbSizeAttachment { *audioProcessor.params->reverbSize->getRangedAudioParameter(), reverbSizeRelay, nullptr };
+    WebSliderParameterAttachment reverbDecayTimeAttachment { *audioProcessor.params->reverbDecayTime->getRangedAudioParameter(), reverbDecayTimeRelay, nullptr };
+    WebSliderParameterAttachment reverbDampeningAttachment { *audioProcessor.params->reverbDampening->getRangedAudioParameter(), reverbDampeningRelay, nullptr };
 
     auto getResource(const juce::String& url) -> std::optional<juce::WebBrowserComponent::Resource>;
     void timerCallback() override;

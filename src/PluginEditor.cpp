@@ -57,6 +57,9 @@ webview{juce::WebBrowserComponent::Options{}
     .withOptionsFrom(skewLRelay)
     .withOptionsFrom(positionRRelay)
     .withOptionsFrom(skewRRelay)
+    .withOptionsFrom(reverbSizeRelay)
+    .withOptionsFrom(reverbDecayTimeRelay)
+    .withOptionsFrom(reverbDampeningRelay)
     .withResourceProvider([this](const auto& url){
         return getResource(url);
     })}
@@ -74,6 +77,9 @@ webview{juce::WebBrowserComponent::Options{}
     skewLAttachment.sendInitialUpdate();
     positionRAttachment.sendInitialUpdate();
     skewRAttachment.sendInitialUpdate();
+    reverbSizeAttachment.sendInitialUpdate();
+    reverbDecayTimeAttachment.sendInitialUpdate();
+    reverbDampeningAttachment.sendInitialUpdate();
 }
 
 PetalAudioProcessorEditor::~PetalAudioProcessorEditor()

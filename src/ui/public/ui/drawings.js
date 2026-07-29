@@ -47,67 +47,38 @@ function drawInput(){
     ctx.fillRect(0, 0, w, h);
 }
 
-export function drawPitch(ctx, w, h, val = 0.5) {
-    const heightScale = (h - 20) / 60;
-
-    const resolution = 128;
-    const windowWidth = 48; 
-    const scrollPos = val * resolution; 
-    ctx.beginPath();
-
-    for (let i = 0; i <= resolution; i++) {
-        const x = w * 0.05 + (w * 0.9 / resolution) * i;
-
-        let d = i - scrollPos;
-        d = ((d % resolution) + resolution) % resolution;
-        if (d > resolution / 2) d -= resolution;
-
-        let k = 0;
-        if (d >= -windowWidth / 2 && d <= windowWidth / 2) {
-            k = 0.5 * (1 + Math.cos((Math.PI / (windowWidth / 2)) * d));
-        }
-
-        let y = h * 0.95 - k * h * 0.9;
-        y = lerp(y, h * 0.05, heightScale)
-
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+export function drawPitch(ctx, w, h, value = 0.5) {
+    ctx.beginPath()
+    for(let i = 0; i < 24; i++){
+        const angle = Math.cos(Math.PI * value + (Math.PI / 24) * i)
+        const xPos = w/2 + angle * w * 0.45
+        ctx.arc(xPos - 0.5, h/2 - 0.5, 1, 0, Math.PI * 2, false);
     }
-    ctx.lineTo(w * 0.95, h * 0.95);
-    ctx.lineTo(w * 0.05, h * 0.95);
-    ctx.closePath();
-
-    const grad = ctx.createLinearGradient(w / 2, 0, w / 2, h);
-    grad.addColorStop(0.2, '#7e7e7e')
-    grad.addColorStop(0.5, '#cccaca')
-    grad.addColorStop(1, colB)
-
-    ctx.fillStyle = grad
+    ctx.fillStyle = 'white'
     ctx.fill()
 
-    ctx.strokeStyle = grad
-    ctx.lineWidth = 4;
-    ctx.lineJoin = "round"
-    ctx.lineCap = "round"
-    ctx.stroke();
-
+    ctx.beginPath()
+    ctx.moveTo(w * 0.05 + w * 0.9 * value, h * 0.15)
+    ctx.lineTo(w * 0.05 + w * 0.9 * value, h * 0.85)
+    ctx.strokeStyle = "white"
+    ctx.stroke()
 }
 
 
-
+// reverb send
 export function drawReverbSend(ctx, w, h, val = 0) {
     const heightPercentage = h / 80; // this is hard coded because i didnt want to pass another val :()
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 6; i++) {
         drawLineThickness(ctx, w, h, i, val);
     }
 }
 
 function drawLineThickness(ctx, w, h, index, amount = 1) {
     const resolution = 128;
-    const val = Math.min(Math.max(amount * 8 - index, 0), 1);
+    const val = Math.min(Math.max(amount * 6 - index, 0), 1);
     const windowWidth = 16 * (8 - index * amount);
 
-    const barSpacing = w * 0.9 / 8;
+    const barSpacing = w * 0.9 / 6;
     const barX = w * 0.05 + barSpacing * index;
 
     ctx.beginPath();
@@ -129,18 +100,127 @@ function drawLineThickness(ctx, w, h, index, amount = 1) {
     ctx.lineTo(barX, h * 0.95);
     ctx.closePath();
 
-    const grad = ctx.createLinearGradient(w/2, 0, w/2, h);
-    grad.addColorStop(0.2, '#7e7e7e')
-    grad.addColorStop(0.5, '#cccaca')
-    grad.addColorStop(1, colB)
 
-    ctx.fillStyle = grad;
-    ctx.fill();
-    
-    ctx.strokeStyle = grad
-    ctx.lineWidth = 4;
+    ctx.fillStyle = "white"
+    ctx.fill();    
+    ctx.strokeStyle = "white"
+    ctx.lineWidth = 2;
     ctx.lineJoin = "round"
     ctx.lineCap = "round"
     ctx.stroke();
 }
 
+// 
+
+export function drawSkew(ctx, w, h, val = 0){
+    const radius = w * 0.45 * (val * 0.75 + 0.25);
+
+    ctx.beginPath();
+    ctx.arc(w/2, h/2, radius, 0, Math.PI * 1.75)
+    ctx.strokeStyle = 'white'
+    ctx.stroke()
+
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, w * 0.45, 0, Math.PI * 1.75)
+    ctx.strokeStyle = 'white'
+    ctx.stroke()
+
+}
+
+export function drawPosition(ctx, w, h, val = 0) {
+
+}
+
+
+// reverb size
+export function drawReverbSize(ctx, w, h, val = 0) {
+    const cx = w / 2;
+    const cy = h / 2;
+    const r = w * 0.35;
+
+    ctx.lineJoin = "round"
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'grey';
+    ctx.fillStyle = 'white';
+
+    // back frame
+    ctx.beginPath();
+    for (let i = 0; i < 3; i++) {
+        const j = i * 2 + 1;
+        const angle = Math.PI / 2 + (Math.PI * 2 / 6) * j;
+        const xPos = cx + Math.cos(angle) * r;
+        const yPos = cy + Math.sin(angle) * r;
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(xPos, yPos);
+    }
+    ctx.stroke();
+
+
+    // side frame
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+        const angle = Math.PI / 6 + (Math.PI * 2 / 6) * i;
+        const xPos = cx + Math.cos(angle) * r;
+        const yPos = cy + Math.sin(angle) * r;
+        if (i === 0) ctx.moveTo(xPos, yPos);
+        else ctx.lineTo(xPos, yPos);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    // inner fill
+    ctx.beginPath();
+    const innerR = r * 0.25 + r * val * 0.75;
+    for (let i = 0; i < 6; i++) {
+        const angle = Math.PI / 6 + (Math.PI * 2 / 6) * i;
+        const xPos = cx + Math.cos(angle) * innerR;
+        const yPos = cy + Math.sin(angle) * innerR;
+        if (i === 0) ctx.moveTo(xPos, yPos);
+        else ctx.lineTo(xPos, yPos);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // front frame
+    ctx.beginPath();
+    for (let i = 0; i < 3; i++) {
+        const j = i * 2 + 1;
+        const angle = Math.PI / 6 + (Math.PI * 2 / 6) * j;
+        const xPos = cx + Math.cos(angle) * r;
+        const yPos = cy + Math.sin(angle) * r;
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(xPos, yPos);
+    }
+    ctx.lineJoin = "round"
+    ctx.lineWidth = 1.5;
+
+    ctx.stroke();
+}
+
+
+// reverb decay
+
+export function drawReverbDecay(ctx, w, h, val = 0){
+}
+
+
+
+export function drawReverbDampening(ctx, w, h, val = 0){
+    const cx = w/2
+    const cy = h/2
+
+    for(let i = 0; i < 8; i++){
+        const angle = (Math.PI * 2/8) * i * val;
+
+        ctx.moveTo(cx + Math.cos(angle) * w * 0.5)
+
+        
+    }
+}
+
+
+
+
+function drawReverbLevel(ctx, w, h, val = 0){
+
+}

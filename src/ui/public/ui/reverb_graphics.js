@@ -1,17 +1,10 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import * as THREE from 'three';
-import { Line2 } from 'three/addons/lines/Line2.js';
-import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-
-
-import { render, matcapTexture, source } from './matcap.js'
 import { reverbLevelMsr } from '../event_listener.js';
+import "./ui/utility.js"
+import { Smoothening } from './ui/utility.js';
 
 export class ReverbGraphic extends LitElement {
-    color1 = [237, 121, 67];
-    color2 = [237, 117, 128];
-    ellipses = [];
 
     static properties = {
         width: { type: Number },
@@ -21,7 +14,7 @@ export class ReverbGraphic extends LitElement {
     static styles = css`
         #canvas-container {
             position: relative;;
-            width: 200px;
+            width: 450px;
             height: 300px;
         }
 
@@ -30,18 +23,15 @@ export class ReverbGraphic extends LitElement {
             top: 0;
             left: 0;
         }
-
-        #overlay {
-            z-index: 1;
-        }
-
     `
 
     constructor() {
         super();
-        render();
-        this.width = 200;
+        this.width = 450;
         this.height = 300;
+
+        this.valA = 0;
+        this.valB = 0;
     }
 
     firstUpdated() {
@@ -57,68 +47,66 @@ export class ReverbGraphic extends LitElement {
 
     initializeSpace() {
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color('#161616')
-        this.camera = new THREE.PerspectiveCamera(75,
-            this.width / this.height,
-            0.1,
-            1000);
-        this.camera.position.z = 7;
 
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
-        this.renderer.setPixelRatio(3)
+        const r = 4;
+        this.camera = new THREE.OrthographicCamera(-2, 2, 3, -2); 
+        this.camera.position.set(r * -0.5, r * -0.5, r * 0.7);
+        this.camera.lookAt(0, 0, 0);
+
+        this.geometry = new THREE.PlaneGeometry(3, 1.5, 128, 24);
+        this.pos = this.geometry.attributes.position;
+        this.srcPos = this.pos.clone();
+
+        const pMaterial = new THREE.PointsMaterial({ size: 1.5 });
+        this.mesh = new THREE.Points(this.geometry, pMaterial);
+        this.mesh.rotation.x = -Math.PI / 2;
+        this.scene.add(this.mesh);
+
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setSize(this.width, this.height);
         this.container.appendChild(this.renderer.domElement);
-        this.renderer.domElement.style.filter = 'blur(0px)';
 
-        this.createEllipses();
-        this.ellipses.forEach(e => this.scene.add(e));
+        this.renderer.domElement.addEventListener("click", () => {
+            this.val = 0;
+        });
 
         this.animate();
     }
 
+    displace(amount = 1, falloff = 0, dampen = 2) {
+        const width = this.geometry.parameters.width;
 
-    createEllipses() {
+        for (let i = 0; i < this.pos.count; i++) {
+            const x = this.srcPos.getX(i);
+            const y = this.srcPos.getY(i);
+            const z = this.srcPos.getZ(i);
 
-        
-        const material = new THREE.MeshMatcapMaterial();
-        material.matcap = matcapTexture;
+            const u = (x + width / 2) / width;
+            const falloffExp = falloff * 1 + 1;
+            const envelope = Math.pow(1 - u, falloffExp);
 
-        this.geometry = new THREE.PlaneGeometry(8, 4, 100, 1);
-        this.vertexCount = this.geometry.attributes.position.count;
-        this.basePositions = this.geometry.attributes.position.array.slice();
-        this.srcPos = this.geometry.attributes.position.array.slice();
+            const baseFreq = Math.PI * 2 * amount;
+            const carrierFreq = dampen;
+            const wave = Math.cos(baseFreq * (1 - envelope) + Math.PI * carrierFreq * x);
+            const height = wave * wave;
 
-        this.bufferData = [];
-        for (let i = 0; i < this.vertexCount; i++) {
-            this.bufferData.push(Math.sin((Math.PI * 2 / this.vertexCount) * i));
+            this.pos.setXYZ(i, x, y, z + height * envelope);
         }
-
-        this.mesh = new THREE.Mesh(this.geometry, material);
-        this.mesh.rotateZ(Math.PI/2)
-        this.mesh.rotateX(-Math.PI/4)
-        this.scene.add(this.mesh);
-
+        this.pos.needsUpdate = true;
+        this.geometry.computeVertexNormals();
     }
-
-    modifyGeometry(val){
-        const pos = this.mesh.geometry.attributes.position; // mutate the mesh's own attribute in place
-
-        for (let i = 0; i < this.vertexCount; i++) {
-            const theta = this.bufferData[i];
-            const ix = i * 3;
-            const x = this.srcPos[ix];
-            const y = this.srcPos[ix + 1];
-            const z = this.srcPos[ix + 2] + Math.cos(theta * val) / 4;
-            pos.setXYZ(i, x, y, z);
-        }
-
-        pos.needsUpdate = true;
-        this.mesh.geometry.computeVertexNormals();
-    }
-
+    
     animate() {
+        const sReverb = new Smoothening(0.05, 0)
+        sReverb.set(reverbLevelMsr)
+
         this.raf = requestAnimationFrame(() => this.animate());
-        this.modifyGeometry(Math.abs(reverbLevelMsr) * 10)
+
+        this.valA = Math.sin(Math.abs(reverbLevelMsr));
+        this.valB + 0.001;
+        if (this.valB >= 1) { this.valB = 1 }
+
+        this.displace(sReverb.get(), Math.abs(sReverb.get()));
         this.renderer.render(this.scene, this.camera);
     }
 

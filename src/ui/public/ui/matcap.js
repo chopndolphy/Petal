@@ -1,14 +1,11 @@
 import * as THREE from 'three';
 
-const colorA = [243, 175, 63];
-const colorB = [238, 147, 165];
-const colorC = [199, 215, 244];
-const colorD = [211, 187, 151]
-const colorE = [202, 215, 241];
+const colorA = "#EB7C94";
+const colorB = "#EDA38D"
+const colorC = "#5F77B2"
+const colorD = "#1C283E"
+const colorE = "#58BAE5"
 
-
-
-const rgb = (c) => `#${c.map(v => v.toString(16).padStart(2, '0')).join('')}`;
 
 let sourceData = null;
 const size = 256;
@@ -31,26 +28,18 @@ function drawMatcap(hlAngle = 0) {
 
 
     const c = srcCtx;
+    c.fillStyle = "#161616"
     c.fillRect(0, 0, size, size);
 
 
-    const colA = '#9a8240' // faint tan
-    const colB = '#54865f' // faint orange
+    const colA = '#ED7580' // faint tan
+    const colB = '#E8792F' // faint orange
     const colC = '#40677d' // pink
     const colD = '#848b93' // almost red
   
     
-    c.beginPath();
-    c.arc(cx, cy, size / 2, 0, Math.PI * 2, true);
-    const gradA = c.createRadialGradient(cx, cy, 0, 
-        cx, cy, size/2);
-    gradA.addColorStop(0, '#161616')
-    gradA.addColorStop(1, '#6a6a6a')
 
-    c.fillStyle = gradA;
-    c.fill()
 
-    
     c.beginPath();
     c.arc(size * 0.25, 
         size * 0.25, 
@@ -65,34 +54,33 @@ function drawMatcap(hlAngle = 0) {
         size * 0.25, 
         size * 0.2);
 
-    gradB.addColorStop(0.0, colB)
-    gradB.addColorStop(0.35, colC)
-    gradB.addColorStop(0.9, colD)
-  // gradB.addColorStop(1, '#161616')
-
+    gradB.addColorStop(0, colorA)
+    gradB.addColorStop(0.5, colorB)
+    gradB.addColorStop(0.8, colorC)
+    gradB.addColorStop(0.95, colorD)
+    gradB.addColorStop(1, "#161616")
     c.fillStyle = gradB;
     c.fill()
 
-    // highlight 2
     
     c.beginPath();
-    c.arc(size * 0.5,
+    c.arc(size * 0.75,
         size * 0.85,
         size * 0.3,
         0,
         Math.PI * 2,
         true);
-    const gradC = c.createRadialGradient(size * 0.5,
+    const gradC = c.createRadialGradient(size * 0.75,
         size * 0.85,
         0,
-        size * 0.5,
+        size * 0.75,
         size * 0.85,
         size * 0.3);
-    gradC.addColorStop(0.1, colA)
-    gradC.addColorStop(0.8, colB)
-    gradC.addColorStop(0.85, colC)
-    gradC.addColorStop(0.9, colD)
-    gradC.addColorStop(1, '#161616')
+    gradC.addColorStop(0, colorA)
+    gradC.addColorStop(0.5, colorB)
+    gradC.addColorStop(0.8, colorC)
+    gradC.addColorStop(0.95, colorD)
+    gradC.addColorStop(1, "#161616")
     c.fillStyle = gradC;
     c.fill()
 
@@ -111,25 +99,25 @@ function drawMatcap(hlAngle = 0) {
         size * 0.7,
         size * 0.2,
         size * 0.2);
-    gradD.addColorStop(0.1, colA)
-    gradD.addColorStop(0.8, colB)
-    gradD.addColorStop(0.85, colC)
-    gradD.addColorStop(0.9, colD)
-    gradD.addColorStop(1, '#7e7e7e')
+    gradD.addColorStop(0, colorA)
+    gradD.addColorStop(0.5, colorB)
+    gradD.addColorStop(0.8, colorC)
+    gradD.addColorStop(0.95, colorD)
+    gradD.addColorStop(1, "#161616")
     c.fillStyle = gradD;
     c.fill()
 
+
+
     c.beginPath();
-    c.arc(size * 0.2,
-        size * 0.5,
-        size * 0.025,
-        0,
-        Math.PI * 2,
-        true);
-    c.fillStyle = 'white';
+    c.arc(cx, cy, size / 2, 0, Math.PI * 2, true);
+    const gradA = c.createRadialGradient(cx, cy, 0,
+        cx, cy, size / 2);
+    gradA.addColorStop(0.35, 'transparent')
+    gradA.addColorStop(1, '#6b727d')
+
+    c.fillStyle = gradA;
     c.fill()
-        
-    
 }
 
 function cacheSource() {
@@ -179,6 +167,6 @@ function renderFishEye(strength = 1, radius = 0.8) {
 export function render(angle) {
     drawMatcap(angle);
     cacheSource();
-    renderFishEye(7, 0.7);
+    renderFishEye(3, 0.7);
     matcapTexture.needsUpdate = true;
 }

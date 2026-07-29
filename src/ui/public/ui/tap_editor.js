@@ -1,44 +1,37 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { drawButton } from './drawings.js';
-import "./ui/numbox.js"
+import "./ui/slider.js"
 import "./ui/button.js"
-import "./ui/dial.js"
 import { drawReverbSend, drawPitch, drawLock } from './drawings.js';
 
 export class TapEditorInstance extends LitElement {
     static properties = {
-        selected: { type: Boolean }
+        isPitch: { type: Boolean }
     }
 
     constructor(){
         super()
-        this.selected = false;
+        this.isPitch = false;
     }
 
     static styles = css `
         #tapInstance {
-            height: 20px;
+            height: 40px;
+            overflow: hidden;
             transition: height 0.5s
         }
-
-        :host([selected]) #tapInstance {
-            height: 60px;
-        }
+            
     `
 
     render(){
         return html`
-        <div id="tapInstance" style="display: flex; flex-direction: row; margin: 10px">
-            <petal-button style="--button-width: 10px; --button-height: 30px" .drawing=${drawButton}></petal-button>
+        <div id="tapInstance" style="display: flex; flex-direction: row; margin: 5px 10px">
+            <petal-button style="--button-width: 10px; --button-height: 40px" .drawing=${drawButton}></petal-button>
 
             <div style="display: flex; flex-direction: column;">
-                <graphic-slider style="--canvas-width: 200px; --canvas-height: 100px" .drawing=${drawPitch} ?selected=${this.selected}></graphic-slider>
-                <number-slider suffix=" st" style="--numbox-width: 100px; --numbox-font-size: 14px; --numbox-align: center"></number-slider>
-            </div>
+                <petal-slider style="--slider-width: 80px; --slider-height: 40px;" .drawing=${drawPitch}  is-resized-on-selection></petal-slider>
+                <petal-slider suffix=" %" style="--numbox-width: 80px; --numbox-height: 20px; --numbox-font-size: 12px; --numbox-align: center"></petal-slider>
 
-            <div style="display: flex; flex-direction: column;">
-                <graphic-slider style="--canvas-width: 200px; --canvas-height: 100px" .drawing=${drawReverbSend} ?selected=${this.selected}></graphic-slider>
-                <number-slider suffix=" %" style="--numbox-width: 100px; --numbox-font-size: 14px; --numbox-align: center"></number-slider>
             </div>
         </div>
         `
@@ -49,31 +42,34 @@ customElements.define("tap-instance", TapEditorInstance)
 
 export class TapEditor extends LitElement {
     static properties = {
-        selected: { type: Number }
+        isPitch: { type: Boolean }
     }
 
     constructor() {
         super()
-        this.selected = 0;
-        this.count = 8;
+        this.isPitch = true;
     }
 
 
     render() {
-        const instances = []
-        for (let i = 0; i < 8; i++) {
-            instances.push(html`
-            <tap-instance
-                ?selected=${this.selected === i}
-                @pointerdown=${() => this.selected = i}
-            ></tap-instance>
-            `)
-        }
-
+        const instances = []            
+        
         return html`
-        <div id="editor" style="display: flex; flex-direction: column">
-        ${instances}
+        <div style="padding-top: 150px; padding-bottom: 100px">
+            <div style="display: flex; flex-direction: row; ">
+                <tap-instance></tap-instance>
+                <tap-instance></tap-instance>
+                <tap-instance></tap-instance>
+                <tap-instance></tap-instance>
+            </div>
+                <div style="display: flex; flex-direction: row; padding-top: 20px;">
+                <tap-instance></tap-instance>
+                <tap-instance></tap-instance>
+                <tap-instance></tap-instance>
+                <tap-instance></tap-instance>
+            </div>
         </div>
+
         `
     }
 }

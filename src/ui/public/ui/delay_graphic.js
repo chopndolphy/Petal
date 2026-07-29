@@ -3,29 +3,29 @@ import * as THREE from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-
-
-import { render, matcapTexture, source } from './matcap.js'
 import { delayTimesL, delayTimesR } from '../event_listener.js';
-
-
+import { Smoothening } from './ui/utility.js';
 
 
 export class DelayGraphic extends LitElement {
-    color1 = [237, 121, 67];
-    color2 = [237, 117, 128];
-    ellipses = [];
+    arcs = [];
 
-    static property = {
+    static properties = {
         width: { type: Number },
         height: { type: Number }
     }
 
     static styles = css`
+        :host {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
         #canvas-container {
-            position: relative;;
-            width: 400px;
-            height: 300px;
+            position: relative;
+            width: 100%;
+            height: 100%;
         }
 
         #canvas-container > canvas {
@@ -33,25 +33,22 @@ export class DelayGraphic extends LitElement {
             top: 0;
             left: 0;
         }
-
-        #overlay {
-            z-index: 1;
-        }
-
     `
 
     constructor() {
         super();
-        render();
-        this.width = 400;
-        this.height = 300;
+        this.width = 0;
+        this.height = 0;
     }
 
     firstUpdated() {
         this.container = this.renderRoot.querySelector("#canvas-container");
-        const resizeObserver = new ResizeObserver(() => {
-            if (this.width > 0) {
+        const resizeObserver = new ResizeObserver((entries) => {
+            const { width, height } = entries[0].contentRect;
+            if (width > 0 && height > 0) {
                 resizeObserver.disconnect();
+                this.width = width;
+                this.height = height;
                 this.initializeSpace();
             }
         });
@@ -60,72 +57,109 @@ export class DelayGraphic extends LitElement {
 
     initializeSpace() {
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color('#161616')
-        this.camera = new THREE.PerspectiveCamera(75,
-            this.width / this.height,
-            0.1,
-            1000);
-        this.camera.position.z = 10;
+        this.camera = new THREE.OrthographicCamera(-1.15, 1.15, -1.15, 1.15);
 
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
-        this.renderer.setPixelRatio(3)
+        this.createArcs();
+
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        this.renderer.setPixelRatio(4);
         this.renderer.setSize(this.width, this.height);
         this.container.appendChild(this.renderer.domElement);
-        this.renderer.domElement.style.filter = 'blur(0px)';
 
-        this.createEllipses();
-        this.ellipses.forEach(e => this.scene.add(e));
+        const r = 4;
+        this.sx = new Smoothening(0.025, 0);
+        this.sy = new Smoothening(0.025, 0);
+        this.sz = new Smoothening(0.025, r);
+        this.camera.position.set(0, 0, r);
+        this.camera.lookAt(0, 0, 0);
+        this.renderer.render(this.scene, this.camera);
+
+        this.onMouseMove = (e) => {
+            const rect = this.container.getBoundingClientRect();
+            const isLeft = (e.clientX - rect.left) < this.width / 2 ? -1 : 1;
+            const r = 4;
+            this.sx.set(isLeft * r * 0.5);
+            this.sy.set(-r * 0.5);
+            this.sz.set(-r * -0.7);
+        };
+
+        this.onMouseLeave = () => {
+            const r = 4;
+            this.sx.set(0);
+            this.sy.set(0);
+            this.sz.set(r);
+        };
+
+        this.renderer.domElement.addEventListener("mousemove", this.onMouseMove);
+        this.renderer.domElement.addEventListener("mouseleave", this.onMouseLeave);
 
         this.animate();
     }
 
+    #arcPositions(xOffset, radius, startAngle, endAngle) {
+        const curve = new THREE.ArcCurve(xOffset, 0, radius, startAngle, endAngle);
+        const positions = [];
+        for (const p of curve.getPoints(64)) {
+            positions.push(p.x, p.y, 0);
+        }
+        return positions;
+    }
 
-    createEllipses() {
-        const material = new THREE.MeshMatcapMaterial();
-        material.matcap = matcapTexture;
-        material.transparent = true;
-        material.opacity = 1;
-
-        this.donuts = []; // 
-
+    createArcs() {
         for (let channel = 0; channel < 2; channel++) {
             const startAngle = channel === 0 ? Math.PI * 0.75 : Math.PI * 1.5;
-            const xOffset = channel === 0 ? 0.25 : -0.25;
+            const endAngle = startAngle + Math.PI * 0.75;
+            const xOffset = channel === 0 ? -0.0625 : 0.0625;
 
             for (let tap = 0; tap < 8; tap++) {
                 const radius = channel === 0 ? delayTimesL[tap] : delayTimesR[tap];
-                const geometry = new THREE.TorusGeometry(radius *8 , 1, 100, 100, Math.PI * 0.75);
-                geometry.rotateZ(startAngle + Math.PI);
 
-                const donutMesh = new THREE.Mesh(geometry, material);
-                donutMesh.position.x = xOffset;
-                donutMesh.position.z = -4;
+                const geometry = new LineGeometry();
+                geometry.setPositions(this.#arcPositions(xOffset, radius, startAngle, endAngle));
 
-                this.ellipses.push(donutMesh);
-                this.donuts.push({ mesh: donutMesh, channel, tap, xOffset, startAngle });
+                const material = new LineMaterial({ color: 0xE58578, linewidth: 2 });
+                material.resolution.set(this.width, this.height);
+
+                const arc = new Line2(geometry, material);
+                arc.computeLineDistances();
+
+                let z = channel === 0 ? tap * -0.125 : tap * -0.125;
+                z = Math.cos(z * Math.PI / 2);
+                arc.position.z = z;
+
+                this.arcs.push({ mesh: arc, channel, tap, xOffset, startAngle, endAngle });
+                this.scene.add(arc);
             }
         }
     }
 
-    updateEllipses() {
-        for (const { mesh, channel, tap, xOffset, startAngle } of this.donuts) {
+    updateArcs() {
+        for (const { mesh, channel, tap, xOffset, startAngle, endAngle } of this.arcs) {
             const radius = channel === 0 ? delayTimesL[tap] : delayTimesR[tap];
-
-            mesh.geometry.dispose();
-            mesh.geometry = new THREE.TorusGeometry(radius * 8, 1, 100, 100, Math.PI * 0.75);
-            mesh.geometry.rotateZ(startAngle + Math.PI);
+            mesh.geometry.setPositions(this.#arcPositions(xOffset, radius, startAngle, endAngle));
         }
     }
 
     animate() {
         this.raf = requestAnimationFrame(() => this.animate());
-        this.updateEllipses();
+
+        this.updateArcs();
+
+        this.camera.position.set(this.sx.get(), this.sy.get(), this.sz.get());
+        this.camera.lookAt(0, 0, 0);
+
         this.renderer.render(this.scene, this.camera);
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
         cancelAnimationFrame(this.raf);
+        this.renderer?.domElement.removeEventListener("mousemove", this.onMouseMove);
+        this.renderer?.domElement.removeEventListener("mouseleave", this.onMouseLeave);
+        for (const { mesh } of this.arcs) {
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+        }
         this.renderer?.dispose();
     }
 

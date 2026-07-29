@@ -22,22 +22,31 @@
 <body>
     <main id="divvy">
         <div style="display: flex; flex-direction: row">
-            <delay-editor></delay-editor>
-            <tap-editor></tap-editor>
-            <reverb-editor></reverb-editor>
+            <reverb-editor id="reverb" style="position: absolute"></reverb-editor>
+            <delay-editor id="delay" style="position: absolute"></delay-editor>
         </div>
         <div style="display: flex; flex-direction: column">
     </main>
-    <p id="consoleError"></p>
+
+    <button id="switch">Switch</button>
     <canvas style="visibility: hidden" id="viewer" width="256" height="256"></canvas>
     <canvas style="visibility: hidden" id="source" width="256" height="256"></canvas>
 </body>
     <script>
+        let editor = true;
+        document.getElementById("switch").addEventListener('click', () => {
+            editor = !editor
+            document.getElementById("reverb").style.visibility = editor ? "hidden" : "visible";;
+            document.getElementById("delay").style.visibility = !editor ? "hidden" : "visible";;
+        })
+
         let div = document.getElementById("divvy");
-        div.style.width = "900px";
+        div.style.width = "950px";
         div.style.height = "450px";
         div.style.backgroundColor = "#161616";
         div.style.borderRadius = "10px";
 
+        div.style.webkitTouchCallout = 'none';
+        div.style.webkitUserSelect = 'none';
     </script>
 </html>
