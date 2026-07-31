@@ -54,35 +54,36 @@ std::array<std::unique_ptr<juce::WebSliderRelay>, 8> PetalAudioProcessorEditor::
     return relays;
 }
 
-PetalAudioProcessorEditor::PetalAudioProcessorEditor (PetalAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p),
-webview{[this]
+PetalAudioProcessorEditor::PetalAudioProcessorEditor(PetalAudioProcessor &p)
+    : AudioProcessorEditor(&p), audioProcessor(p),
+      webview{[this]
+              {
+                  auto options = juce::WebBrowserComponent::Options{}
+                                     .withBackend(juce::WebBrowserComponent::Options::Backend::webview2)
+                                     .withWinWebView2Options(juce::WebBrowserComponent::Options::WinWebView2{}
+                                                                 .withUserDataFolder(juce::File::getSpecialLocation(juce::File::tempDirectory)))
+                                     .withNativeIntegrationEnabled() // make sure this is present too
+                                     .withOptionsFrom(freeTimeLRelay)
+                                     .withOptionsFrom(freeTimeRRelay)
+                                     .withOptionsFrom(positionLRelay)
+                                     .withOptionsFrom(skewLRelay)
+                                     .withOptionsFrom(positionRRelay)
+                                     .withOptionsFrom(skewRRelay)
+                                     .withOptionsFrom(reverbSizeRelay)
+                                     .withOptionsFrom(reverbDecayTimeRelay)
+                                     .withOptionsFrom(reverbLPFRelay)
+                                     .withOptionsFrom(reverbHPFRelay);
+
+                  for (auto &relay : tapShiftAmtRelays)
+                      options = options.withOptionsFrom(*relay);
+                  for (auto &relay : tapReverbAmtRelays)
+                      options = options.withOptionsFrom(*relay);
+
+                  return options.withResourceProvider([this](const auto &url)
+                                                      { return getResource(url); });
+              }()}
+
 {
-    auto options = juce::WebBrowserComponent::Options{}
-        .withBackend(juce::WebBrowserComponent::Options::Backend::webview2)
-        .withWinWebView2Options(juce::WebBrowserComponent::Options::WinWebView2{}
-            .withUserDataFolder(juce::File::getSpecialLocation(juce::File::tempDirectory)))
-        .withNativeIntegrationEnabled()          // make sure this is present too
-        .withOptionsFrom(freeTimeLRelay)
-        .withOptionsFrom(freeTimeRRelay)
-        .withOptionsFrom(positionLRelay)
-        .withOptionsFrom(skewLRelay)
-        .withOptionsFrom(positionRRelay)
-        .withOptionsFrom(skewRRelay)
-        .withOptionsFrom(reverbSizeRelay)
-        .withOptionsFrom(reverbDecayTimeRelay)
-        .withOptionsFrom(reverbDampeningRelay);
-
-    for (auto& relay : tapShiftAmtRelays)  options = options.withOptionsFrom(*relay);
-    for (auto& relay : tapReverbAmtRelays) options = options.withOptionsFrom(*relay);
-
-    return options.withResourceProvider([this](const auto& url){
-        return getResource(url);
-    });
-}()}
-
-
-    {
     addAndMakeVisible(webview);
 
     webview.goToURL("http://localhost:4000");
@@ -97,7 +98,8 @@ webview{[this]
     skewRAttachment.sendInitialUpdate();
     reverbSizeAttachment.sendInitialUpdate();
     reverbDecayTimeAttachment.sendInitialUpdate();
-    reverbDampeningAttachment.sendInitialUpdate();
+    reverbLPFAttachment.sendInitialUpdate();
+    reverbHPFAttachment.sendInitialUpdate();
 
     for (int tap = 0; tap < 8; ++tap)
     {

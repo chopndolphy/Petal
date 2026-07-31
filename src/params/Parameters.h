@@ -18,25 +18,41 @@ public:
     juce::AudioProcessorValueTreeState apvts;
 
     std::unique_ptr<ParameterInstance>
+        inputLevel,
+
         freeTimeL,
         freeTimeR,
+        syncTimeL,
+        syncTimeR,
+        isSyncL,
+        isSyncR,
+        stereoLock,
+
         feedbackAmt,
-        
-        positionL, 
+        feedbackLen,
+
+        delayLevel,
+
+        positionL,
         skewL,
         positionR,
         skewR,
-        
+
         windowSize,
         windowJitter,
 
         reverbDecayTime,
         reverbSize,
-        reverbDampening,
-        reverbLevel;
+        reverbLPF,
+        reverbHPF,
+        reverbDuckAmt,
+        reverbDuckTime,
+        reverbLevel,
+
+        dryLevel;
 
     std::array<std::unique_ptr<ParameterInstance>, 8> 
-    tapShiftAmt, tapReverbAmt; 
+    tapState, tapShiftAmt, tapReverbAmt; 
     
 };
 

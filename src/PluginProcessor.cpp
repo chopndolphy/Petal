@@ -126,25 +126,30 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
 
     petal.setTime(params->freeTimeL->get(),
                   params->freeTimeR->get(),
-                  1, // syncL
-                  1, 
+                  params->syncTimeL->get(),
+                  params->syncTimeR->get(),
+
                   params->positionL->get(),
                   params->skewL->get(),
                   params->positionR->get(),
                   params->skewR->get(),
-                  false);
 
-    petal.setWindowSize(params->windowSize->get(), 
-                        params->windowJitter->get());
+                  params->isSyncL->get(),
+                  params->isSyncR->get(),
+                  params->stereoLock->get());
+
+    petal.setWindowSize(params->windowSize->get());
 
     petal.rvb.setValues(params->reverbLevel->get(),
-                        params->reverbDecayTime->get() * 200.0f,
-                        300.0f + params->reverbDampening->get() * 16000.0f,
+                        params->reverbDecayTime->get(),
+                        params->reverbLPF->get(),
+                        params->reverbHPF->get(),
                         params->reverbSize->get());
 
     for(int tap = 0; tap < 8; tap++){
-        petal.setValues(tap, 
-                        params->tapShiftAmt[tap]->get(), 
+        petal.setValues(tap,
+                        params->tapState[tap]->get(),
+                        params->tapShiftAmt[tap]->get(),
                         params->tapReverbAmt[tap]->get());
     }
     petal.processBlock(buffer);

@@ -21,7 +21,7 @@ public:
         rvbBuffer.setSize(2, samplesPerBlock, false, false, true);
 
         updateCorrelationSizes();
-
+        
         for (auto &t : tp)
             for (int sub = 0; sub < numOverlaps; ++sub)
             {
@@ -30,7 +30,12 @@ public:
                 t.simOffsetL[sub] = 0.0f;
                 t.simOffsetR[sub] = 0.0f;
             }
+
+        for (int tap = 0; tap < 8; tap++){
+            tp[tap].gain.reset(sampleRate, 0.01f);
+        }
     }
+    
 
     static float warpTapPosition(float basePos, float pos, float exponent)
     {
@@ -49,7 +54,8 @@ public:
     }
 
     void setTime(float freeTimeLInMs, float freeTimeRInMs, int syncTimeL, int syncTimeR,
-                 float positionL, float skewL, float positionR, float skewR, bool stereoLock)
+                 float positionL, float skewL, float positionR, float skewR,
+                 bool isSyncL, bool isSyncR, bool stereoLock)
     {
         float freeTimeLInSamples = (freeTimeLInMs / 1000.0f) * sampleRate;
         float freeTimeRInSamples = (freeTimeRInMs / 1000.0f) * sampleRate;
@@ -91,16 +97,6 @@ public:
         this->feedbackAmt = feedbackAmt / 110;
     }
 
-    void setCorrelate(bool enabled) { correlateEnabled = enabled; }
-
-    void setCorrelationParams(float maxLagMs, float frameMs, int stride)
-    {
-        corrMaxLagMs = maxLagMs;
-        corrFrameMs = frameMs;
-        corrStride = juce::jmax(1, stride);
-        updateCorrelationSizes();
-    }
-
     void processBlock(juce::AudioBuffer<float> &buffer)
     {
         auto readDataL = buffer.getReadPointer(0);
@@ -127,38 +123,29 @@ public:
                     if (phase >= 1.0f)
                         phase -= 1.0f;
 
-                    if (correlateEnabled)
-                    {
+
                         const float prevPhase = tp[tap].phasePrevSub[sub];
                         if (std::abs(phase - prevPhase) > 0.5f) // wrapped this sample
                         {
-                            // Outgoing edge uses the OLD offset (what it actually read).
                             const float endPosL = tp[tap].freeTimeL + windowSizeInSamples * prevPhase + tp[tap].simOffsetL[sub];
                             const float endPosR = tp[tap].freeTimeR + windowSizeInSamples * prevPhase + tp[tap].simOffsetR[sub];
 
-                            // Incoming nominal start (offset chosen by the search).
                             const float startL = tp[tap].freeTimeL + windowSizeInSamples * phase;
                             const float startR = tp[tap].freeTimeR + windowSizeInSamples * phase;
 
                             tp[tap].simOffsetL[sub] = computeSimOffset(dlL, endPosL, startL);
                             tp[tap].simOffsetR[sub] = computeSimOffset(dlR, endPosR, startR);
                         }
-                    }
-                    else
-                    {
-                        tp[tap].simOffsetL[sub] = 0.0f;
-                        tp[tap].simOffsetR[sub] = 0.0f;
-                    }
-                    tp[tap].phasePrevSub[sub] = phase;
-                    // -----------------------------------------------------------
 
-                    float window = 0.5f * (1.0f - std::cos(2.0f * pi * phase));
-                    float windowPos = windowSizeInSamples * phase;
-                    float delayL = tp[tap].freeTimeL + windowPos + tp[tap].simOffsetL[sub];
-                    float delayR = tp[tap].freeTimeR + windowPos + tp[tap].simOffsetR[sub];
+                        tp[tap].phasePrevSub[sub] = phase;
+                        // -----------------------------------------------------------
+                        float window = 0.5f * (1.0f - std::cos(2.0f * pi * phase));
+                        float windowPos = windowSizeInSamples * phase;
+                        float delayL = tp[tap].freeTimeL + windowPos + tp[tap].simOffsetL[sub];
+                        float delayR = tp[tap].freeTimeR + windowPos + tp[tap].simOffsetR[sub];
 
-                    pitchShiftedL += dlL.readSample(delayL) * window;
-                    pitchShiftedR += dlR.readSample(delayR) * window;
+                        pitchShiftedL += dlL.readSample(delayL) * window * tp[tap].gain.getNextValue();
+                        pitchShiftedR += dlR.readSample(delayR) * window * tp[tap].gain.getNextValue();
                 }
 
                 feedbackL = pitchShiftedL * feedbackAmt;
@@ -182,34 +169,28 @@ public:
         float phaseAngle = rate / sampleRate;
 
         tp[tap].phase += phaseAngle;
-        if (tp[tap].phase >= 1.0f)
-        {
-            tp[tap].phase -= 1.0f;
-        }
-        if (tp[tap].phase <= 0.0f)
-        {
-            tp[tap].phase += 1.0f;
-        }
+        if (tp[tap].phase >= 1.0f) { tp[tap].phase -= 1.0f; }
+        if (tp[tap].phase <= 0.0f) { tp[tap].phase += 1.0f; }
     }
 
-    void setValues(int tap, int shiftAmountInSemitones, float reverbAmount)
+    void setValues(int tap, bool state, int shiftAmountInSemitones, float reverbAmount)
     {
         float shiftAmount = std::exp(0.057762265f * shiftAmountInSemitones);
+        tp[tap].gain.setTargetValue(state);
         tp[tap].shiftAmount = shiftAmount;
         tp[tap].reverbAmount = reverbAmount;
     }
 
-    void setWindowSize(int windowSizeInMilliseconds, float windowJitterAmt)
+    void setWindowSize(int windowSizeInMilliseconds)
     {
         this->windowSizeInMilliseconds = windowSizeInMilliseconds;
         this->windowSizeInSamples = (sampleRate / 1000.0f) * windowSizeInMilliseconds;
-        this->windowJitterAmt = windowJitterAmt / 500.0f;
     }
 
     std::array<std::atomic<float>, 8> amplitudesL, amplitudesR;
     std::array<std::atomic<float>, 8> delayTimesL, delayTimesR;
 
-    MyVerb rvb; // its public
+    PetalReverb rvb;
     juce::AudioBuffer<float> rvbBuffer;
 
 private:
@@ -219,9 +200,10 @@ private:
 
     struct tapAttributes
     {
-        float phase = 0.0;
-        float phaseInv = 0.0;
-        bool isActive = true;
+        float phase = 0.0f;
+        float phaseInv = 0.0f;
+        juce::SmoothedValue<float> gain;
+      //  bool isActive = true;
         int syncTimeL = 1;
         int syncTimeR = 1;
         float freeTimeL = 1.0f;
@@ -229,10 +211,10 @@ private:
         float shiftAmount = 1.0f;
         float reverbAmount = 0.0f;
 
-        // Per-slot WSOLA state.
         std::array<float, numOverlaps> phasePrevSub{{}};
         std::array<float, numOverlaps> simOffsetL{{}};
         std::array<float, numOverlaps> simOffsetR{{}};
+
     };
     std::array<tapAttributes, 8> tp;
 
@@ -245,24 +227,23 @@ private:
 
     double sampleRate = 48000;
     float pi = juce::MathConstants<float>::pi;
-    float windowSizeInSamples = (float)(sampleRate / 2), windowSizeInMilliseconds = 200.0, windowJitterAmt = 0.0f;
+    float windowSizeInSamples = (float)(sampleRate / 2), windowSizeInMilliseconds = 200.0;
 
     juce::Random rd;
     bool feedbackSuppression = false;
     float feedbackAmt = 0.0f, feedbackL = 0.0f, feedbackR = 0.0f;
     Delayline dlL, dlR;
 
-    bool correlateEnabled = true;
-    float corrMaxLagMs = 8.0f; 
-    float corrFrameMs = 4.0f;  
+    float corrMaxLagInMs = 8.0f;
+    float corrFrameInMs = 4.0f;
     int corrStride = 2;        
     int maxLagSamples = 0;     
     int corrTaps = 0;          
 
     void updateCorrelationSizes()
     {
-        maxLagSamples = (int)(corrMaxLagMs * sampleRate / 1000.0f);
-        int frameSamples = (int)(corrFrameMs * sampleRate / 1000.0f);
+        maxLagSamples = (int)(corrMaxLagInMs * sampleRate / 1000.0f);
+        int frameSamples = (int)(corrFrameInMs * sampleRate / 1000.0f);
         corrTaps = juce::jlimit(4, kMaxCorrTaps, frameSamples / juce::jmax(1, corrStride));
     }
 

@@ -2,11 +2,10 @@
 #include <JuceHeader.h>
 #include "Filters.h"
 
-class MyVerb
+class PetalReverb
 {
 public:
-
-    MyVerb(){}
+    PetalReverb() {}
 
     void prepareToPlay(double sampleRate, int samplesPerBlock) 
     {
@@ -33,8 +32,6 @@ public:
         lpR.prepareToPlay(sampleRate);
         hpL.prepareToPlay(sampleRate);
         hpR.prepareToPlay(sampleRate);
-        hpL.setCoefficients(120, 0.707);
-        hpR.setCoefficients(120, 0.707);
 
         // delay line specs:
         juce::dsp::ProcessSpec spec;
@@ -47,14 +44,17 @@ public:
         modAngle1 = 0.015 / sampleRate;
         modAngle2 = 0.01 / sampleRate;
     }
-    
-    void setValues(float outputLevel, float decayTimeInMs, float dampFreqInHz, float sizeScaling) {
+
+    void setValues(float outputLevel, float decayTimeInMs, float LPFreqInHz, float HPFreqInHz, float sizeScaling)
+    {
         level = outputLevel;
-        size = 1.0f + sizeScaling * 4.0f;
+        size = 1.0f + sizeScaling/25.0f;
 
         // dampening one pole
-        lpL.setCoefficients(dampFreqInHz, 0.707);
-        lpR.setCoefficients(dampFreqInHz, 0.707);
+        lpL.setCoefficients(LPFreqInHz, 0.707);
+        lpR.setCoefficients(LPFreqInHz, 0.707);
+        hpL.setCoefficients(HPFreqInHz, 0.707);
+        hpR.setCoefficients(HPFreqInHz, 0.707);
 
         // decay time
         float decayInSamples = (decayTimeInMs / 1000.0f) * sampleRate;
