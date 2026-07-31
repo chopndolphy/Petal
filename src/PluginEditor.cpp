@@ -65,6 +65,11 @@ PetalAudioProcessorEditor::PetalAudioProcessorEditor(PetalAudioProcessor &p)
                                      .withNativeIntegrationEnabled() // make sure this is present too
                                      .withOptionsFrom(freeTimeLRelay)
                                      .withOptionsFrom(freeTimeRRelay)
+                                     .withOptionsFrom(syncTimeLRelay)
+                                     .withOptionsFrom(syncTimeRRelay)
+                                     .withOptionsFrom(isSyncLRelay)
+                                     .withOptionsFrom(isSyncRRelay)
+                                     .withOptionsFrom(stereoLockRelay)
                                      .withOptionsFrom(positionLRelay)
                                      .withOptionsFrom(skewLRelay)
                                      .withOptionsFrom(positionRRelay)
@@ -73,7 +78,8 @@ PetalAudioProcessorEditor::PetalAudioProcessorEditor(PetalAudioProcessor &p)
                                      .withOptionsFrom(reverbDecayTimeRelay)
                                      .withOptionsFrom(reverbLPFRelay)
                                      .withOptionsFrom(reverbHPFRelay);
-
+                  for (auto &relay : tapStateRelays)
+                      options = options.withOptionsFrom(*relay);
                   for (auto &relay : tapShiftAmtRelays)
                       options = options.withOptionsFrom(*relay);
                   for (auto &relay : tapReverbAmtRelays)
@@ -92,6 +98,11 @@ PetalAudioProcessorEditor::PetalAudioProcessorEditor(PetalAudioProcessor &p)
 
     freeTimeLAttachment.sendInitialUpdate();
     freeTimeRAttachment.sendInitialUpdate();
+    syncTimeLAttachment.sendInitialUpdate();
+    syncTimeRAttachment.sendInitialUpdate();
+    isSyncLAttachment.sendInitialUpdate();
+    isSyncRAttachment.sendInitialUpdate();
+    stereoLockAttachment.sendInitialUpdate();
     positionLAttachment.sendInitialUpdate();
     skewLAttachment.sendInitialUpdate();
     positionRAttachment.sendInitialUpdate();
@@ -103,6 +114,11 @@ PetalAudioProcessorEditor::PetalAudioProcessorEditor(PetalAudioProcessor &p)
 
     for (int tap = 0; tap < 8; ++tap)
     {
+        tapStateAttachments[tap] = std::make_unique<WebSliderParameterAttachment>(
+            *audioProcessor.params->tapState[tap]->getRangedAudioParameter(),
+            *tapStateRelays[tap], nullptr);
+        tapStateAttachments[tap]->sendInitialUpdate();
+
         tapShiftAmtAttachments[tap] = std::make_unique<WebSliderParameterAttachment>(
             *audioProcessor.params->tapShiftAmt[tap]->getRangedAudioParameter(),
             *tapShiftAmtRelays[tap], nullptr);

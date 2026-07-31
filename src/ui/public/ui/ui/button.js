@@ -1,10 +1,12 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { getSliderState } from '../../juce.js';
 
 export class PetalButton extends LitElement {
     static properties = {
         onLabel: {},
         offLabel: {},
         value: { type: Boolean },
+        juceID: { type: String, attribute: 'juceid' },
         drawing: { type: Object }
     }
 
@@ -34,16 +36,33 @@ export class PetalButton extends LitElement {
         super();
         this.onLabel = "On"
         this.offLabel = "Off"
-        this.value = false; // actually get from juce
+        this.value = false;
         this.drawing = null;
+        this.juceSlider = null;
     }
 
     firstUpdated() {
         this.button = this.shadowRoot.querySelector('button');
-        this.button.addEventListener("click", () => {
-            this.value = !this.value;
-            this.displayText = this.value ? this.onLabel : this.offLabel;
-        })
+        this.button.addEventListener("click", () => this.toggle());
+
+        if (this.juceID) {
+            this.juceSlider = getSliderState(this.juceID);
+
+            this._onJuceChange = () => {
+                this.value = this.juceSlider.getNormalisedValue() >= 0.5;
+            };
+            this._onJuceChange();
+            this.juceSlider.valueChangedEvent.addListener(this._onJuceChange);
+        }
+    }
+
+    toggle() {
+        const newValue = !this.value;
+
+        if (this.juceSlider) this.juceSlider.setNormalisedValue(newValue ? 1 : 0);
+
+        this.value = newValue;
+        this.dispatchEvent(new CustomEvent('change', { detail: this.value }));
     }
 
     updated(changedProps) { if (this.drawing) this.draw(); }
@@ -63,11 +82,9 @@ export class PetalButton extends LitElement {
         this.drawing(ctx, w, h, this.value);
     }
 
-    handleClick() { this.dispatchEvent(new CustomEvent('change', { detail: this.value })); }
-
     render() {
         return html`
-            <button @click=${this.handleClick}>
+            <button>
                 ${this.drawing
                 ? html`<canvas></canvas>`
                 : (this.value ? this.onLabel : this.offLabel)

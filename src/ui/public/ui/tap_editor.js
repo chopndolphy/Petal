@@ -25,22 +25,21 @@ export class TapEditorInstance extends LitElement {
             overflow: hidden;
             transition: height 0.5s
         }
-
     `
 
     render(){
         return html`
         <div id="tapInstance" style="display: flex; flex-direction: row">
-            <petal-button style="--button-width: 25px; --button-height: 50px; margin-right: 5px" .drawing=${drawTapState}></petal-button>
+            <petal-button juceID="tapState${this.tapIndex}" style="--button-width: 25px; --button-height: 50px; margin-right: 5px" .drawing=${drawTapState}></petal-button>
             <p>${this.tapIndex}</p>
             <div style="position: relative; width: 100px; height: 70px;">
                 <div style="position: absolute; top: 0; left: 0; display: flex; flex-direction: column; visibility: ${this.isPitch ? 'visible' : 'hidden'}">
-                    <petal-slider juceID="tapShiftAmt${this.tapIndex}" style="--slider-width: 100px; --slider-height: 50px; margin-bottom: 5px;" .drawing=${drawPitch}  is-resized-on-selection></petal-slider>
+                    <petal-slider juceID="tapShiftAmt${this.tapIndex}" style="--slider-width: 100px; --slider-height: 50px; margin-bottom: 5px;" .drawing=${drawPitch}></petal-slider>
                     <petal-slider juceID="tapShiftAmt${this.tapIndex}" suffix=" st" min="-12" max="12" style="--numbox-width: 100px; --numbox-height: 15px; --numbox-font-size: 14px; --numbox-align: center"></petal-slider>
                 </div>
 
                 <div style="position: absolute; top: 0; left: 0; display: flex; flex-direction: column; visibility: ${!this.isPitch ? 'visible' : 'hidden'}">
-                    <petal-slider juceID="tapReverbAmt${this.tapIndex}" style="--slider-width: 100px; --slider-height: 50px; margin-bottom: 5px;" .drawing=${drawReverbSend}  is-resized-on-selection></petal-slider>
+                    <petal-slider juceID="tapReverbAmt${this.tapIndex}" style="--slider-width: 100px; --slider-height: 50px; margin-bottom: 5px;" .drawing=${drawReverbSend}></petal-slider>
                     <petal-slider juceID="tapReverbAmt${this.tapIndex}" suffix=" %" style="--numbox-width: 100px; --numbox-height: 15px; --numbox-font-size: 14px; --numbox-align: center"></petal-slider>
                 </div>
             </div>

@@ -53,30 +53,36 @@ public:
         }
     }
 
-    void setTime(float freeTimeLInMs, float freeTimeRInMs, int syncTimeL, int syncTimeR,
+    void setTime(float freeTimeLInMs, float freeTimeRInMs, int syncIndexL, int syncIndexR,
                  float positionL, float skewL, float positionR, float skewR,
                  bool isSyncL, bool isSyncR, bool stereoLock)
     {
-        float freeTimeLInSamples = (freeTimeLInMs / 1000.0f) * sampleRate;
-        float freeTimeRInSamples = (freeTimeRInMs / 1000.0f) * sampleRate;
-        float syncTimeLInMilliseconds = 1000.0f / ((bpm / 60.0f) * syncTimeOptions[syncTimeL]);
-        float syncTimeRInMilliseconds = 1000.0f / ((bpm / 60.0f) * syncTimeOptions[syncTimeR]);
+        const int lastIndex = (int) syncTimeOptions.size() - 1;
+        float syncTimeLInMs = 1000.0f / ((bpm / 60.0f) * syncTimeOptions[(size_t) juce::jlimit(0, lastIndex, syncIndexL)]);
+        float syncTimeRInMs = 1000.0f / ((bpm / 60.0f) * syncTimeOptions[(size_t) juce::jlimit(0, lastIndex, syncIndexR)]);
+
+        float timeLInMs = isSyncL ? syncTimeLInMs : freeTimeLInMs;
+        float timeRInMs = stereoLock ? timeLInMs : (isSyncR ? syncTimeRInMs : freeTimeRInMs);
+
+        float timeLInSamples = (timeLInMs / 1000.0f) * sampleRate;
+        float timeRInSamples = (timeRInMs / 1000.0f) * sampleRate;
+
+        float effectivePositionR = stereoLock ? positionL : positionR;
+        float effectiveSkewR = stereoLock ? skewL : skewR;
 
         float exponentL = std::pow(2.0f, skewL * 4.5f);
-        float exponentR = std::pow(2.0f, skewR * 4.5f);
+        float exponentR = std::pow(2.0f, effectiveSkewR * 4.5f);
 
         for (int tap = 1; tap < 8; tap++)
         {
             float basePos = (1.0f / 8.0f) * tap;
             float warpedL = warpTapPosition(basePos, positionL, exponentL);
-            float warpedR = warpTapPosition(basePos, positionR, exponentR);
+            float warpedR = warpTapPosition(basePos, effectivePositionR, exponentR);
             delayTimesL[tap].store(warpedL);
             delayTimesR[tap].store(warpedR);
 
-            tp[tap].freeTimeL = warpedL * freeTimeLInSamples;
-            tp[tap].freeTimeR = warpedR * freeTimeRInSamples;
-            tp[tap].syncTimeL = warpedL * syncTimeLInMilliseconds;
-            tp[tap].syncTimeR = warpedR * syncTimeRInMilliseconds;
+            tp[tap].freeTimeL = warpedL * timeLInSamples;
+            tp[tap].freeTimeR = warpedR * timeRInSamples;
         }
     }
 
@@ -204,8 +210,6 @@ private:
         float phaseInv = 0.0f;
         juce::SmoothedValue<float> gain;
       //  bool isActive = true;
-        int syncTimeL = 1;
-        int syncTimeR = 1;
         float freeTimeL = 1.0f;
         float freeTimeR = 1.0f;
         float shiftAmount = 1.0f;

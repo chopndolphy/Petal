@@ -6,7 +6,26 @@ import "./ui/utility.js"
 
 import { drawLock, drawSkew, drawPosition } from './drawings.js';
 
+// Labels correspond 1:1 (by index) to PetalProcessor::syncTimeOptions / the
+// "syncTimeL"/"syncTimeR" AudioParameterChoice on the backend.
+const SYNC_TIME_LABELS = [
+    "8 Bars", "6 Bars", "4 Bars", "3 Bars", "2 Bars", "1 Bar",
+    "1/2 Dotted", "1/2", "1/4 Dotted", "1/2 Triplet", "5/4",
+    "1/4", "1/8 Dotted", "1/4 Triplet", "1/8", "1/8 Triplet",
+    "1/16", "1/16 Triplet", "1/32"
+];
+
 export class DelayEditor extends LitElement {
+    static properties = {
+        isSyncL: { type: Boolean },
+        isSyncR: { type: Boolean }
+    }
+
+    constructor() {
+        super();
+        this.isSyncL = true;
+        this.isSyncR = true;
+    }
     static styles = css`
         *, *::before, *::after {
             box-sizing: border-box;

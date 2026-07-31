@@ -93,13 +93,21 @@ Parameters::createParameterLayout()
                                                            "Free Time R",
                                                            juce::NormalisableRange<float> { 5.0f, 10000.0f, 0.01 }, 1000.0f));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"syncTimeL", 1},
-                                                           "Sybc Time L",
-                                                           juce::NormalisableRange<float>{5.0f, 10000.0f, 0.01}, 1000.0f));
+    // Labels correspond 1:1 (by index) to PetalProcessor::syncTimeOptions.
+    static const juce::StringArray syncTimeChoices {
+        "8 Bars", "6 Bars", "4 Bars", "3 Bars", "2 Bars", "1 Bar",
+        "1/2 Dotted", "1/2", "1/4 Dotted", "1/2 Triplet", "5/4",
+        "1/4", "1/8 Dotted", "1/4 Triplet", "1/8", "1/8 Triplet",
+        "1/16", "1/16 Triplet", "1/32"
+    };
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"syncTimeR", 1},
-                                                           "Sync Time R",
-                                                           juce::NormalisableRange<float>{5.0f, 10000.0f, 0.01}, 1000.0f));
+    layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID{"syncTimeL", 1},
+                                                             "Sync Time L",
+                                                             syncTimeChoices, 11));
+
+    layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID{"syncTimeR", 1},
+                                                             "Sync Time R",
+                                                             syncTimeChoices, 11));
 
     layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{"isSyncL", 1},
                                                           "Sync L",
