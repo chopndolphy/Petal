@@ -16,6 +16,7 @@ apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
     // time
     freeTimeL = std::make_unique<ParameterInstance>(audioProcessor, *this, "freeTimeL");
     freeTimeR = std::make_unique<ParameterInstance>(audioProcessor, *this, "freeTimeR");
+    feedbackAmt = std::make_unique<ParameterInstance>(audioProcessor, *this, "feedbackAmt");
 
     // shaping
     positionL = std::make_unique<ParameterInstance>(audioProcessor, *this, "positionL");
@@ -25,6 +26,7 @@ apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
 
     // window
     windowSize = std::make_unique<ParameterInstance>(audioProcessor, *this, "windowSize");
+    windowJitter = std::make_unique<ParameterInstance>(audioProcessor, *this, "windowJitter");
 
     // reverb
     reverbDecayTime = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbDecayTime");
@@ -51,20 +53,21 @@ Parameters::createParameterLayout()
         auto tapReverbAmtName = "Tap " + juce::String(tap + 1) + " Reverb Amount";
         layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{tapReverbAmtID, 1},
                                                                tapReverbAmtName,
-                                                               juce::NormalisableRange<float>{0.0f, 1.0, 0.01}, 1.0f));
+                                                               juce::NormalisableRange<float>{0.0f, 1.0, 0.01}, 0.0f));
     }
 
     // time                 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "freeTimeL", 1},
                                                            "Free Time L",
-                                                           juce::NormalisableRange<float> { 5.0f, 10000.0f, 0.01 }, 100.0f));
+                                                           juce::NormalisableRange<float> { 5.0f, 10000.0f, 0.01 }, 1000.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "freeTimeR", 1},
                                                            "Free Time R",
-                                                           juce::NormalisableRange<float> { 5.0f, 10000.0f, 0.01 }, 100.0f));
+                                                           juce::NormalisableRange<float> { 5.0f, 10000.0f, 0.01 }, 1000.0f));
 
-
-
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"feedbackAmt", 1},
+                                                           "Feedback Amount",
+                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 25.0f));
 
     // shaping
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "positionL", 1},
@@ -73,7 +76,7 @@ Parameters::createParameterLayout()
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"skewL", 1},
                                                            "Skew L",
-                                                           juce::NormalisableRange<float>{ -1.0f, 1.0f, 0.01}, 1.0f));
+                                                           juce::NormalisableRange<float>{ -1.0f, 1.0f, 0.01}, 0.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"positionR", 1},
                                                            "Position R",
@@ -81,14 +84,17 @@ Parameters::createParameterLayout()
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"skewR", 1},
                                                            "Skew R",
-                                                           juce::NormalisableRange<float>{ -1.0f, 1.0f, 0.01}, 1.0f));
+                                                           juce::NormalisableRange<float>{ -1.0f, 1.0f, 0.01}, 0.0f));
 
 
     // window size
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"windowSize", 1},
                                                            "Window Size",
-                                                           juce::NormalisableRange<float>{10.0f, 200.0f, 0.1}, 50.0f));
+                                                           juce::NormalisableRange<float>{10.0f, 200.0f, 0.1}, 100.0f));
 
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"windowJitter", 1},
+                                                           "Window Jitter",
+                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.1}, 0.0f));
 
     // reverb 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "reverbDecayTime", 1},

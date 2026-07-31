@@ -134,13 +134,13 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
                   params->skewR->get(),
                   false);
 
-    petal.setWindowSize(params->windowSize->get());
+    petal.setWindowSize(params->windowSize->get(), 
+                        params->windowJitter->get());
 
     petal.rvb.setValues(params->reverbLevel->get(),
                         params->reverbDecayTime->get() * 200.0f,
                         300.0f + params->reverbDampening->get() * 16000.0f,
                         params->reverbSize->get());
-
 
     for(int tap = 0; tap < 8; tap++){
         petal.setValues(tap, 

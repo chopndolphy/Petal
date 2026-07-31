@@ -117,7 +117,7 @@ export class DelayGraphic extends LitElement {
                 const geometry = new LineGeometry();
                 geometry.setPositions(this.#arcPositions(xOffset, radius, startAngle, endAngle));
 
-                const material = new LineMaterial({ color: 0xE58578, linewidth: 2 });
+                const material = new LineMaterial({ color: 'white', linewidth: 2 });
                 material.resolution.set(this.width, this.height);
 
                 const arc = new Line2(geometry, material);

@@ -44,30 +44,48 @@ static const char* getMimeForExtension(const juce::String& extension) {
 
 
 //==============================================================================
+std::array<std::unique_ptr<juce::WebSliderRelay>, 8> PetalAudioProcessorEditor::makeTapRelays (const juce::String& idPrefix)
+{
+    std::array<std::unique_ptr<juce::WebSliderRelay>, 8> relays;
+
+    for (int tap = 0; tap < 8; ++tap)
+        relays[tap] = std::make_unique<juce::WebSliderRelay>(idPrefix + juce::String(tap));
+
+    return relays;
+}
+
 PetalAudioProcessorEditor::PetalAudioProcessorEditor (PetalAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p), 
-webview{juce::WebBrowserComponent::Options{}
-    .withBackend(juce::WebBrowserComponent::Options::Backend::webview2)
-    .withWinWebView2Options(juce::WebBrowserComponent::Options::WinWebView2{}
-        .withUserDataFolder(juce::File::getSpecialLocation(juce::File::tempDirectory)))
-    .withNativeIntegrationEnabled()          // make sure this is present too
-    .withOptionsFrom(freeTimeLRelay)
-    .withOptionsFrom(freeTimeRRelay)
-    .withOptionsFrom(positionLRelay)
-    .withOptionsFrom(skewLRelay)
-    .withOptionsFrom(positionRRelay)
-    .withOptionsFrom(skewRRelay)
-    .withOptionsFrom(reverbSizeRelay)
-    .withOptionsFrom(reverbDecayTimeRelay)
-    .withOptionsFrom(reverbDampeningRelay)
-    .withResourceProvider([this](const auto& url){
+    : AudioProcessorEditor (&p), audioProcessor (p),
+webview{[this]
+{
+    auto options = juce::WebBrowserComponent::Options{}
+        .withBackend(juce::WebBrowserComponent::Options::Backend::webview2)
+        .withWinWebView2Options(juce::WebBrowserComponent::Options::WinWebView2{}
+            .withUserDataFolder(juce::File::getSpecialLocation(juce::File::tempDirectory)))
+        .withNativeIntegrationEnabled()          // make sure this is present too
+        .withOptionsFrom(freeTimeLRelay)
+        .withOptionsFrom(freeTimeRRelay)
+        .withOptionsFrom(positionLRelay)
+        .withOptionsFrom(skewLRelay)
+        .withOptionsFrom(positionRRelay)
+        .withOptionsFrom(skewRRelay)
+        .withOptionsFrom(reverbSizeRelay)
+        .withOptionsFrom(reverbDecayTimeRelay)
+        .withOptionsFrom(reverbDampeningRelay);
+
+    for (auto& relay : tapShiftAmtRelays)  options = options.withOptionsFrom(*relay);
+    for (auto& relay : tapReverbAmtRelays) options = options.withOptionsFrom(*relay);
+
+    return options.withResourceProvider([this](const auto& url){
         return getResource(url);
-    })}
-    
+    });
+}()}
+
+
     {
     addAndMakeVisible(webview);
 
-    webview.goToURL("http://localhost:4000");  
+    webview.goToURL("http://localhost:4000");
     setSize(900, 450);
     startTimerHz(30);
 
@@ -80,6 +98,19 @@ webview{juce::WebBrowserComponent::Options{}
     reverbSizeAttachment.sendInitialUpdate();
     reverbDecayTimeAttachment.sendInitialUpdate();
     reverbDampeningAttachment.sendInitialUpdate();
+
+    for (int tap = 0; tap < 8; ++tap)
+    {
+        tapShiftAmtAttachments[tap] = std::make_unique<WebSliderParameterAttachment>(
+            *audioProcessor.params->tapShiftAmt[tap]->getRangedAudioParameter(),
+            *tapShiftAmtRelays[tap], nullptr);
+        tapShiftAmtAttachments[tap]->sendInitialUpdate();
+
+        tapReverbAmtAttachments[tap] = std::make_unique<WebSliderParameterAttachment>(
+            *audioProcessor.params->tapReverbAmt[tap]->getRangedAudioParameter(),
+            *tapReverbAmtRelays[tap], nullptr);
+        tapReverbAmtAttachments[tap]->sendInitialUpdate();
+    }
 }
 
 PetalAudioProcessorEditor::~PetalAudioProcessorEditor()

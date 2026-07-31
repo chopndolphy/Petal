@@ -20,6 +20,7 @@ public:
     std::unique_ptr<ParameterInstance>
         freeTimeL,
         freeTimeR,
+        feedbackAmt,
         
         positionL, 
         skewL,
@@ -27,6 +28,7 @@ public:
         skewR,
         
         windowSize,
+        windowJitter,
 
         reverbDecayTime,
         reverbSize,

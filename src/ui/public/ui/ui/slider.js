@@ -122,6 +122,12 @@ export class PetalSlider extends LitElement {
         this.resizeObserver?.disconnect();
     }
 
+    updated(changedProperties) {
+        if (changedProperties.has('drawing')) {
+            this.drawCanvas();
+        }
+    }
+
     lastClickTime = 0;
     lastClickYPos = 0;
     startNorm = 0;
@@ -151,7 +157,7 @@ export class PetalSlider extends LitElement {
 
         this.lastClickTime = currentTime;
         this.lastClickYPos = e.clientY;
-        this.startNorm = this.juceSlider.getNormalisedValue(); // anchor to CURRENT value
+        this.startNorm = this.juceSlider.getNormalisedValue(); 
         this.setPointerCapture(e.pointerId);
         this.mouseState = "drag";
     }
@@ -163,9 +169,6 @@ export class PetalSlider extends LitElement {
         const deltaY = this.lastClickYPos - e.clientY; // up = increase
         const sens = e.shiftKey ? this.sensitivity * this.fineFactor : this.sensitivity;
 
-        // Drag stays linear in normalised space; the exponent lives in the
-        // norm<->value mapping, so a linear slider travel reads as an
-        // exponential value change.
         const norm = this.startNorm + deltaY * sens;
         this.applyNorm(norm);
     }
@@ -203,7 +206,6 @@ export class PetalSlider extends LitElement {
         this.updateDisplay(norm);
     }
 
-    // Pushes norm to whichever visual is active: canvas drawing or text input.
     updateDisplay(norm) {
         this._norm = norm;
 
@@ -245,7 +247,6 @@ export class PetalSlider extends LitElement {
         return true;
     }
 
-    // Strict: the whole field must be a number, optionally followed by a unit.
     parseNumeric(raw) {
         const m = raw.trim().match(/^([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*([a-zA-Z%]*)$/);
         if (!m) return null;
@@ -255,13 +256,12 @@ export class PetalSlider extends LitElement {
 
         if (this.mode === "time") {
             const unit = m[2].toLowerCase();
-            if (unit === "s") return num * 1000; // seconds -> ms
-            return num;                          // "ms" or bare -> ms
+            if (unit === "s") return num * 1000; 
+            return num;
         }
         return num;
     }
 
-    // --- text shown while editing (no suffix) -----------------------------
     editString(norm) {
         const value = this.normToValue(norm);
         switch (this.mode) {
@@ -278,7 +278,6 @@ export class PetalSlider extends LitElement {
         }
     }
 
-    // --- display formatting -----------------------------------------------
     formatDisplay(value, norm) {
         switch (this.mode) {
             case "enum": {
@@ -292,14 +291,14 @@ export class PetalSlider extends LitElement {
             case "percent":
                 return `${value.toFixed(0)}%`;
             default:
-                return value.toFixed(2) + this.suffix;
+                return value.toFixed(1) + this.suffix;
         }
     }
 
     formatTime(ms) {
         if (ms < 1000) return `${Math.round(ms)} ms`;
         const s = ms / 1000;
-        if (s < 10) return `${s.toFixed(2)} s`;
+        if (s < 10) return `${s.toFixed(0)} s`;
         return `${s.toFixed(1)} s`;
     }
 

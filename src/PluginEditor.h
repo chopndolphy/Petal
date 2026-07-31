@@ -5,6 +5,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "PluginProcessor.h"
 #include <juce_gui_extra/juce_gui_extra.h>
+#include <array>
 //==============================================================================
 /**
 */
@@ -32,18 +33,30 @@ private:
         reverbDecayTimeRelay { "reverbDecayTime" },
         reverbDampeningRelay { "reverbDampening" };
 
+    static std::array<std::unique_ptr<juce::WebSliderRelay>, 8> makeTapRelays (const juce::String& idPrefix);
+
+    std::array<std::unique_ptr<juce::WebSliderRelay>, 8> tapShiftAmtRelays  = makeTapRelays ("tapShiftAmt");
+    std::array<std::unique_ptr<juce::WebSliderRelay>, 8> tapReverbAmtRelays = makeTapRelays ("tapReverbAmt");
+
     juce::WebBrowserComponent webview {
-        juce::WebBrowserComponent::Options{}
-            .withOptionsFrom (freeTimeLRelay)
-            .withOptionsFrom (freeTimeRRelay)
-            .withOptionsFrom (positionLRelay)
-            .withOptionsFrom (skewLRelay)
-            .withOptionsFrom (positionRRelay)
-            .withOptionsFrom (skewRRelay)
-            .withOptionsFrom (reverbSizeRelay)
-            .withOptionsFrom (reverbDecayTimeRelay)
-            .withOptionsFrom (reverbDampeningRelay)
-            .withResourceProvider ([this] (const auto& url) { return getResource (url); })
+        [this]
+        {
+            auto options = juce::WebBrowserComponent::Options{}
+                .withOptionsFrom (freeTimeLRelay)
+                .withOptionsFrom (freeTimeRRelay)
+                .withOptionsFrom (positionLRelay)
+                .withOptionsFrom (skewLRelay)
+                .withOptionsFrom (positionRRelay)
+                .withOptionsFrom (skewRRelay)
+                .withOptionsFrom (reverbSizeRelay)
+                .withOptionsFrom (reverbDecayTimeRelay)
+                .withOptionsFrom (reverbDampeningRelay);
+
+            for (auto& relay : tapShiftAmtRelays)  options = options.withOptionsFrom (*relay);
+            for (auto& relay : tapReverbAmtRelays) options = options.withOptionsFrom (*relay);
+
+            return options.withResourceProvider ([this] (const auto& url) { return getResource (url); });
+        }()
     };
 
     WebSliderParameterAttachment freeTimeLAttachment { *audioProcessor.params->freeTimeL->getRangedAudioParameter(), freeTimeLRelay, nullptr };
@@ -55,6 +68,8 @@ private:
     WebSliderParameterAttachment reverbSizeAttachment { *audioProcessor.params->reverbSize->getRangedAudioParameter(), reverbSizeRelay, nullptr };
     WebSliderParameterAttachment reverbDecayTimeAttachment { *audioProcessor.params->reverbDecayTime->getRangedAudioParameter(), reverbDecayTimeRelay, nullptr };
     WebSliderParameterAttachment reverbDampeningAttachment { *audioProcessor.params->reverbDampening->getRangedAudioParameter(), reverbDampeningRelay, nullptr };
+
+    std::array<std::unique_ptr<WebSliderParameterAttachment>, 8> tapShiftAmtAttachments, tapReverbAmtAttachments;
 
     auto getResource(const juce::String& url) -> std::optional<juce::WebBrowserComponent::Resource>;
     void timerCallback() override;

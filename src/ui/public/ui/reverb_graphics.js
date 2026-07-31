@@ -15,7 +15,7 @@ export class ReverbGraphic extends LitElement {
         #canvas-container {
             position: relative;;
             width: 450px;
-            height: 300px;
+            height: 250px;
         }
 
         #canvas-container > canvas {
@@ -28,7 +28,7 @@ export class ReverbGraphic extends LitElement {
     constructor() {
         super();
         this.width = 450;
-        this.height = 300;
+        this.height = 250;
 
         this.valA = 0;
         this.valB = 0;
