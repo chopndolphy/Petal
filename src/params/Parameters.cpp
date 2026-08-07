@@ -214,7 +214,7 @@ ParameterInstance::ParameterInstance(PetalAudioProcessor& p, Parameters& pm, juc
     value.store(initValue);
     valueSafe = initValue;
     cachedValue.store(initValue);
-    smoothed.reset(48000.0, 0.02);
+    smoothed.reset(10);
 
     if (auto* parameter = dynamic_cast<juce::AudioProcessorParameterWithID*>(param.apvts.getParameter(paramID)))
     {

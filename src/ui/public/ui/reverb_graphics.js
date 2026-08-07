@@ -33,6 +33,8 @@ export class ReverbGraphic extends LitElement {
 
         this.valA = 0;
         this.valB = 0;
+
+        this.reverbLevel = 0;
     }
 
     firstUpdated() {
@@ -44,6 +46,7 @@ export class ReverbGraphic extends LitElement {
             }
         });
         resizeObserver.observe(this.container);
+        
     }
 
     createTexture(){
@@ -95,7 +98,7 @@ export class ReverbGraphic extends LitElement {
         this.animate();
     }
 
-    displace(amount = 1, falloff = 0, dampen = 2) {
+    displace(amount = 4, falloff = 0, dampen = 1) {
         const width = this.geometry.parameters.width;
         const colorAttr = this.geometry.attributes.color;
         const vertexColor = new THREE.Color();
@@ -122,16 +125,16 @@ export class ReverbGraphic extends LitElement {
     }
     
     animate() {
-        const sReverb = new Smoothening(0.05, 0)
-        sReverb.set(reverbLevelMsr)
+        const sReverb = new Smoothening(0.1, 0)
+        sReverb.set(Math.abs(reverbLevelMsr))
 
         this.raf = requestAnimationFrame(() => this.animate());
 
-        this.valA = Math.sin(Math.abs(reverbLevelMsr));
-        this.valB + 0.001;
-        if (this.valB >= 1) { this.valB = 1 }
-
-        this.displace(sReverb.get(), Math.abs(sReverb.get()));
+        this.reverbLevel = sReverb.get();
+        
+      //  if (this.reverbLevel >= 1) { this.reverbLevel = 0 }
+        const lvl = this.reverbLevel * 6 + 1;
+        this.displace(2, sReverb.get(), lvl);
         this.renderer.render(this.scene, this.camera);
     }
 

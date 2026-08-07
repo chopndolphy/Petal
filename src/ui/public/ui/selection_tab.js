@@ -2,7 +2,7 @@ import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/co
 import { drawButton } from './drawings.js';
 import "./ui/slider.js"
 import "./ui/button.js"
-import { drawReverbSend, drawPitch, drawTapState, drawSelectDelay, drawSelectReverb } from './drawings.js';
+import { drawReverbSend, drawPitch, drawTapState, drawSelectDelay, drawSelectReverb, drawSelectIO } from './drawings.js';
 
 export class SelectionTab extends LitElement {
     static properties = {
@@ -55,16 +55,12 @@ export class SelectionTab extends LitElement {
                 @click=${() => this._toggleIO()}
                 style="--button-width: 50px;
                 --button-height: 100px"
-                .drawing=${drawButton}>
+                .drawing=${drawSelectIO}>
             </petal-button>
         </div>
         `
     }
 
-    // petal-button toggles its own internal .value on every click, so the tab
-    // pair's shared "which one is active" state has to be re-asserted onto the
-    // DOM after every click, even a no-op one, or the clicked button visually
-    // flips even when isDisplayingDelay didn't change.
     updated() {
         const [delayButton, reverbButton, ioButton] = this.shadowRoot.querySelectorAll('petal-button');
         if (delayButton) delayButton.value = this.isDisplayingDelay;

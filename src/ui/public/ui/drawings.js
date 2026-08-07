@@ -81,29 +81,22 @@ export function drawTapState(ctx, w, h, val){
 export function drawSelectReverb(ctx, w, h, val) {
     const cx = w/2, cy = h/2, iconSize = w * 0.9;
 
-    for(let i = 0; i < 48; i++){
-        const xPos = w * 0.05 + (w * 0.5/48) * i
-        const accel = i * 0.05;
-        let angle = Math.sin((Math.PI * 2 * accel /48) * i)
-        angle *= angle;
-        const yPos = cy + angle * 10;
+    for(let wave = 0; wave < 4; wave++){
+        for(let i = 0; i < 48; i++){
+            const xPos = w * 0.05 + (w * 0.95/48) * i
+            const angle = Math.sin((Math.PI * 2 * (wave + 1) /48) * i)
+            const amp = w * 0.0625 * (4 - wave)
+            const yPos = cy + (wave - 2) + angle * amp;
 
-        if (i === 0) { ctx.moveTo(xPos, yPos) }
-        else { ctx.lineTo(xPos, yPos) }
+            if (i === 0) { ctx.moveTo(xPos, yPos) }
+            else { ctx.lineTo(xPos, yPos) }
+        }
+        ctx.strokeStyle =  `rgba(255, 255, 255, ${ 1/(wave + 1) })`
+        ctx.lineWidth = 1.5;
+        ctx.lineCap = "round"
+        ctx.stroke()
     }
-
-    for (let i = 48; i >= 48; i--) {
-        const xPos = w * 0.05 + (w * 0.5 / 48) * i
-        const accel = i * 0.05;
-        let angle = Math.sin((Math.PI * 2 * accel / 48) * i)
-        angle *= angle;
-        const yPos = cy + angle * 10;
-        { ctx.lineTo(xPos, yPos) }
-    }
-
-    ctx.strokeStyle = 'white'
-    ctx.stroke()
-
+    
 }
 
 export function drawSelectDelay(ctx, w, h, val) {
@@ -111,12 +104,16 @@ export function drawSelectDelay(ctx, w, h, val) {
 
     for(let i = 0; i < 4; i++){
         const radius = (w * 0.45/4) * (i + 1)
-        ctx.arc(cx, cy, radius, Math.PI * 0.75, Math.PI * 0.25, true);
+        ctx.beginPath();
+
+        ctx.arc(cx, cy, radius, Math.PI * 0.75, Math.PI * 0.25, false);
+        ctx.lineWidth = 1.5;
+        ctx.lineCap = "round"
+        ctx.strokeStyle = 'white'
+        ctx.stroke()
+
     }
 
-    ctx.lineWidth = 1.5;
-    ctx.lineCap = "round"
-    ctx.stroke()
 }
 
 
@@ -464,21 +461,53 @@ export function drawDial(ctx, w, h, val = 0, aux = {}){
 }
 
 export function drawFeedback(ctx, w, h, val = 0, aux = {}){
-    const cx = w / 2, cy = h / 2;
-    const numDots = 64;
 
-    for (let i = 0; i < numDots * val; i++){
-        const xPos = cx + Math.cos(Math.PI * 0.5 + (Math.PI * 8 / numDots) * i) * w * 0.35;
-        let yPos = h * 0.25 + ((h * 0.75 / numDots) * i) 
-        yPos += Math.sin(Math.PI * 0.5 + (Math.PI * 8 / numDots) * i);
+    const baseColor = color.pink;
+    const numLines = 48;
+    const grad = ctx.createLinearGradient(0, h/2, w * val, h/2)
+    grad.addColorStop(0, withAlpha(color.pink, val * 0.8 + 0.2))
+    grad.addColorStop(0.8, withAlpha(color.orange, val * 0.2 + 0.8))
+    grad.addColorStop(1, color.tan)
 
-        ctx.beginPath();
-        ctx.arc(xPos, yPos, 1.5, 0, Math.PI * 2, true);
-        const a = Math.cos((Math.PI * 8 / numDots) * i) * 0.35 + 0.7;
-        ctx.fillStyle = `rgba(255, 255, 255, ${a})`
-        ctx.fill()
-    }
+
+    const cy = h/2
+    const value = Math.floor(val * numLines);
+
+    for (let i = 0; i < numLines; i++){
+        const xPos = w * 0.05 + (w * 0.95 / numLines) * i;
+        const yPos = i > value ? h * 0.15 : h * 0.25;
+
+        ctx.beginPath()
+        ctx.moveTo(xPos, cy - yPos);
+        ctx.lineTo(xPos, cy + yPos);
+        ctx.strokeStyle = i > value ? "grey" : i == value ? color.tan : grad;
+        ctx.lineWidth = i == value ? 2 : 1.5;
+        ctx.lineCap = "round";
+        ctx.stroke()
+   }
+
+    
 }
 
 
+export function drawSelectIO(ctx, w, h, val = 0){
+    const cx = w/2, cy = h/2, iconSize = w * 0.8;
 
+    for(let i = 0; i < 4; i++){
+
+        const x = { start: w * 0.1, end: w * 0.9, fader: w * 0.25 + w * 0.15 * i }
+        const y = cy - (iconSize/4) * i;
+        
+        ctx.beginPath()
+        ctx.moveTo(x.start, y)
+        ctx.lineTo(x.end, y);
+
+        ctx.strokeStyle = 'white'
+        ctx.stroke();
+
+        const faderSize = w * 0.1;
+        ctx.roundRect((x.start + (iconSize / 4) * i), y - faderSize/2, faderSize * 2, faderSize, 4);
+        ctx.fillStyle = 'white'
+        ctx.fill();
+    }
+}

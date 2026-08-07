@@ -54,34 +54,45 @@ export class PetalButton extends LitElement {
             this._onJuceChange();
             this.juceSlider.valueChangedEvent.addListener(this._onJuceChange);
         }
-        
+
+        if (this.drawing) {
+            this.canvas = this.shadowRoot.querySelector('canvas');
+
+            this.resizeObserver = new ResizeObserver((entries) => {
+                const { width, height } = entries[0].contentRect;
+                const dpr = window.devicePixelRatio || 1;
+
+                this.canvas.width = Math.round(width * dpr);
+                this.canvas.height = Math.round(height * dpr);
+                this.w = width;
+                this.h = height;
+
+                this.draw();
+            });
+            this.resizeObserver.observe(this.button);
+        }
     }
 
-    toggle() {
-        const newValue = !this.value;
-
-        if (this.juceSlider) this.juceSlider.setNormalisedValue(newValue ? 1 : 0);
-
-        this.value = newValue;
-        this.dispatchEvent(new CustomEvent('change', { detail: this.value }));
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this.resizeObserver) this.resizeObserver.disconnect();
     }
 
-    updated(changedProps) { if (this.drawing) this.draw(); }
+    updated(changedProps) {
+        if (this.drawing && this.canvas) this.draw();
+    }
 
     draw() {
-        const canvas = this.shadowRoot.querySelector('canvas');
-        if (!canvas || !this.drawing) return;
+        if (!this.canvas || !this.drawing || !this.w || !this.h) return;
 
-        const button = this.shadowRoot.querySelector('button');
-        const w = button.offsetWidth;  
-        const h = button.offsetHeight; 
-        canvas.width = w;              
-        canvas.height = h;
+        const dpr = window.devicePixelRatio || 1;
+        const ctx = this.canvas.getContext('2d');
 
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, w, h);
-        this.drawing(ctx, w, h, this.value);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, this.w, this.h);
+        this.drawing(ctx, this.w, this.h, this.value);
     }
+
 
     render() {
         return html`
