@@ -14,52 +14,10 @@
         }
     }
     </script>
-
-    <script type="module" src="./ui/delay_editor.js"></script>
-    <script type="module" src="./ui/reverb_editor.js"></script>
-    <script type="module" src="./ui/tap_editor.js"></script>
-    <script type="module" src="./ui/input_editor.js"></script>
-
-    <script type="module" src="./event_listener.js"></script>
+    <script type="module" src="./ui/app.js"></script>
 
 </head>
-
-<body>
-    <main id="divvy">
-        <div style="display: flex; flex-direction: row; align-items: center; gap: 20px">
-
-            <div id="fx-stack" style="position: relative">
-                <reverb-editor id="reverb" style="position: absolute; top: 0; left: 0; visibility: hidden;"></reverb-editor>
-                <delay-editor id="delay" style="position: absolute; top: 0; left: 0; visibility: visible;"></delay-editor>
-            </div>
-
-            <tap-editor id="tap"></tap-editor>
-        </div>
-    </main>
-
-    <button id="switch">Switch</button>
-</body>
-    <script>
-        let editor = true;
-        document.getElementById("switch").addEventListener('click', () => {
-            editor = !editor
-            document.getElementById("reverb").style.visibility = editor ? "hidden" : "visible";;
-            document.getElementById("delay").style.visibility = !editor ? "hidden" : "visible";;
-            document.getElementById("tap").isPitch = editor;
-        })
-
-        let div = document.getElementById("divvy");
-        div.style.width = "775px";
-        div.style.height = "450px";
-        div.style.backgroundColor = "#161616";
-        div.style.borderRadius = "10px";
-
-        div.style.webkitTouchCallout = 'none';
-        div.style.webkitUserSelect = 'none';
-
-
-        let stack = document.getElementById("fx-stack");
-            stack.style.width = "450px";   // whatever your editor width is
-            stack.style.height = "450px";
-    </script>
+    <body style="background-color: #1d1d1d">
+        <main-app></main-app>
+    </body>
 </html>

@@ -37,6 +37,7 @@ public:
         skewL,
         positionR,
         skewR,
+        round,
 
         windowSize,
         windowJitter,
@@ -46,8 +47,11 @@ public:
         reverbLPF,
         reverbHPF,
         reverbDuckAmt,
-        reverbDuckTime,
+        reverbDuckLen,
         reverbLevel,
+
+        delayDuckAmt,
+        delayDuckLen,
 
         dryLevel;
 
@@ -70,15 +74,19 @@ public:
     //==============================================================================
     float get() const noexcept;
     float getSafe() const noexcept;
-    juce::RangedAudioParameter* getRangedAudioParameter() const noexcept;
+    float getSmooth() noexcept;
+
+    juce::RangedAudioParameter *getRangedAudioParameter() const noexcept;
+
 private:
     float valueSafe;
     std::atomic<float> value;
     std::atomic<float> cachedValue;
+    juce::SmoothedValue<float> smoothed;
 
     juce::String paramID;
     juce::RangedAudioParameter* rangedParam = nullptr;
-
+    
     PetalAudioProcessor& audioProcessor;
     Parameters& param;
 };

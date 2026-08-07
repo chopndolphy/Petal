@@ -15,7 +15,6 @@ export class ReverbEditor extends LitElement {
             font-size: 14px;
             font-family: Verdana;
             color: #696969;
-
         }
     `
 
@@ -30,36 +29,64 @@ export class ReverbEditor extends LitElement {
 
     render(){
         return html`
-        <div style="display: flex; flex-direction: column; justify-content: center; padding: 10px; width: 450px">
-            <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-around">
-            <p style="color: white">Ducking</p>
-            <p>Amount</p>
-            <petal-slider juceID="reverbDecayTime" suffix=" %" style="--numbox-width: 100px; --numbox-font-size: 14px; --numbox-align: left"></petal-slider>
-            <p>Release</p>
-            <petal-slider juceID="reverbDecayTime" suffix=" %" style="--numbox-width: 100px; --numbox-font-size: 14px; --numbox-align: left"></petal-slider>
-        </div>
-
+        <div style="display: flex; flex-direction: column; justify-content: center; width: 450px">
             <reverb-graphic></reverb-graphic>
             
             <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 16px">
                 <div style="display: flex; flex-direction: column; align-items: center">
                     <p>Size</p>
-                    <petal-slider juceID="reverbDecayTime" style="--slider-width: 80px; --slider-height: 74px" .drawing=${drawReverbSize}></petal-slider>
-                    <petal-slider juceID="reverbDecayTime" suffix=" %" style="--numbox-width: 100px; --numbox-font-size: 14px; --numbox-align: center"></petal-slider>
+                    <petal-slider 
+                        juceID="reverbDecayTime" 
+                        style="--slider-width: 80px; 
+                        --slider-height: 74px" 
+                        .drawing=${drawReverbDecay}>
+                    </petal-slider>
+
+                    <petal-slider juceID="reverbDecayTime" 
+                        suffix=" %" 
+                        style="--numbox-width: 100px; 
+                        --numbox-font-size: 14px; 
+                        --numbox-align: center">
+                    </petal-slider>
                 </div>
 
                 <div style="display: flex; flex-direction: column; align-items: center">
                     <p>Decay</p>
-                    <petal-slider juceID="reverbSize" style="--slider-width: 80px; --slider-height: 74px" .drawing=${drawReverbDecay}></petal-slider>
-                    <petal-slider juceID="reverbSize" suffix=" %" style="--numbox-width: 100px; --numbox-font-size: 14px; --numbox-align: center"></petal-slider>
+                    <petal-slider juceID="reverbSize" 
+                        style="--slider-width: 80px; 
+                        --slider-height: 74px" 
+                        .drawing=${drawReverbSize}>
+                    </petal-slider>
+
+                    <petal-slider juceID="reverbSize" 
+                        suffix=" %" 
+                        style="--numbox-width: 100px; 
+                        --numbox-font-size: 14px; 
+                        --numbox-align: center">
+                    </petal-slider>
                 </div>
 
                 <div style="display: flex; flex-direction: column; align-items: center">
                     <p>Tone</p>
-                    <canvas id="reverbTone" style="width: 120px; height: 74px" onload=${drawReverbTone}></canvas>
+                    <canvas id="reverbTone" 
+                        style="width: 120px; height: 74px"
+                        onload=${drawReverbTone}>
+                    </canvas>
                     <div style="display: flex; flex-direction: row; align-items: center">
-                    <petal-slider juceID="reverbDampening" suffix=" %" style="--numbox-width: 75px; --numbox-font-size: 14px; --numbox-align: right"></petal-slider>
-                    <petal-slider juceID="reverbDampening" suffix=" %" style="--numbox-width: 75px; --numbox-font-size: 14px; --numbox-align: left"></petal-slider>
+
+                    <petal-slider juceID="reverbDampening" 
+                        suffix=" %" 
+                        style="--numbox-width: 75px; 
+                        --numbox-font-size: 14px; 
+                        --numbox-align: right">
+                    </petal-slider>
+
+                    <petal-slider juceID="reverbDampening" suffix=" %" 
+                        style="--numbox-width: 75px; 
+                        --numbox-font-size: 14px; 
+                        --numbox-align: left">
+                    </petal-slider>
+
                     </div>
                 </div>
             </div>

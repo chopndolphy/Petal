@@ -31,7 +31,7 @@ apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
     skewL = std::make_unique<ParameterInstance>(audioProcessor, *this, "skewL");
     positionR = std::make_unique<ParameterInstance>(audioProcessor, *this, "positionR");
     skewR = std::make_unique<ParameterInstance>(audioProcessor, *this, "skewR");
-
+    round = std::make_unique<ParameterInstance>(audioProcessor, *this, "round");
     // feedback
     feedbackAmt = std::make_unique<ParameterInstance>(audioProcessor, *this, "feedbackAmt");
     feedbackLen = std::make_unique<ParameterInstance>(audioProcessor, *this, "feedbackLen");
@@ -48,8 +48,11 @@ apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
     reverbLPF = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbLPF");
     reverbHPF = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbHPF");
     reverbDuckAmt = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbDuckAmt");
-    reverbDuckTime = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbDuckAmt");
+    reverbDuckLen = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbDuckLen");
     reverbLevel = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbLevel");
+
+    delayDuckAmt = std::make_unique<ParameterInstance>(audioProcessor, *this, "delayDuckAmt");
+    delayDuckLen = std::make_unique<ParameterInstance>(audioProcessor, *this, "delayDuckLen");
 
     dryLevel = std::make_unique<ParameterInstance>(audioProcessor, *this, "dryLevel");
 }
@@ -84,30 +87,29 @@ Parameters::createParameterLayout()
                                                                juce::NormalisableRange<float>{0.0f, 1.0, 0.01}, 0.0f));
     }
 
-    // time                 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "freeTimeL", 1},
+    // time
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"freeTimeL", 1},
                                                            "Free Time L",
-                                                           juce::NormalisableRange<float> { 5.0f, 10000.0f, 0.01 }, 1000.0f));
+                                                           juce::NormalisableRange<float>{5.0f, 500.0f, 0.01, 4.0}, 200.0f));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "freeTimeR", 1},
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"freeTimeR", 1},
                                                            "Free Time R",
-                                                           juce::NormalisableRange<float> { 5.0f, 10000.0f, 0.01 }, 1000.0f));
+                                                           juce::NormalisableRange<float>{5.0f, 500.0f, 0.01, 4.0}, 200.0f));
 
-    // Labels correspond 1:1 (by index) to PetalProcessor::syncTimeOptions.
+    // Labels correspond 1:1 (by index) to PetalProcessor::syncTimeOptions and
+    // the JS SYNC_TIME_LABELS.
     static const juce::StringArray syncTimeChoices {
-        "8 Bars", "6 Bars", "4 Bars", "3 Bars", "2 Bars", "1 Bar",
-        "1/2 Dotted", "1/2", "1/4 Dotted", "1/2 Triplet", "5/4",
-        "1/4", "1/8 Dotted", "1/4 Triplet", "1/8", "1/8 Triplet",
-        "1/16", "1/16 Triplet", "1/32"
+        "1/32", "3/64", "1/16", "3/32", "1/8", "3/16",
+        "1/4", "3/8", "1/2", "3/4", "1"
     };
 
     layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID{"syncTimeL", 1},
                                                              "Sync Time L",
-                                                             syncTimeChoices, 11));
+                                                             syncTimeChoices, 6));
 
     layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID{"syncTimeR", 1},
                                                              "Sync Time R",
-                                                             syncTimeChoices, 11));
+                                                             syncTimeChoices, 6));
 
     layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{"isSyncL", 1},
                                                           "Sync L",
@@ -138,6 +140,10 @@ Parameters::createParameterLayout()
                                                            "Skew R",
                                                            juce::NormalisableRange<float>{ -1.0f, 1.0f, 0.01}, 0.0f));
 
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"round", 1},
+                                                           "Round",
+                                                           juce::NormalisableRange<float>{0.0f, 1.0f, 0.01}, 0.0f));
+
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"feedbackAmt", 1},
                                                            "Feedback Amount",
                                                            juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 25.0f));
@@ -153,7 +159,7 @@ Parameters::createParameterLayout()
     // window size
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"windowSize", 1},
                                                            "Window Size",
-                                                           juce::NormalisableRange<float>{10.0f, 200.0f, 0.1}, 100.0f));
+                                                           juce::NormalisableRange<float>{20.0f, 200.0f, 0.1}, 120.0f));
 
     // reverb 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "reverbDecayTime", 1},
@@ -166,23 +172,32 @@ Parameters::createParameterLayout()
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"reverbLPF", 1},
                                                            "Reverb LPF",
-                                                           juce::NormalisableRange<float>{50.0f, 18000.0f, 0.01}, 12000.0f));
+                                                           juce::NormalisableRange<float>{50.0f, 18000.0f, 0.01, 4.0}, 12000.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"reverbHPF", 1},
                                                            "Reverb HPF",
-                                                           juce::NormalisableRange<float>{50.0f, 18000.0f, 0.01}, 440.0f));
+                                                           juce::NormalisableRange<float>{50.0f, 18000.0f, 0.01, 4.0}, 440.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"reverbDuckAmt", 1},
                                                            "Reverb Duck Amount",
-                                                           juce::NormalisableRange<float>{0.0f, 1.0f, 0.01}, 1.0f));
+                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 0.0f));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"reverbDuckTime", 1},
-                                                           "Reverb Duck Time",
-                                                           juce::NormalisableRange<float>{0.0f, 1.0f, 0.01}, 1.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"reverbDuckLen", 1},
+                                                           "Reverb Duck Length",
+                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 25.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "reverbLevel", 1},
                                                            "Reverb Level",
                                                            juce::NormalisableRange<float> { 0.0f, 1.0f, 0.01 }, 1.0f));
+
+    // delay ducking
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"delayDuckAmt", 1},
+                                                           "Delay Duck Amount",
+                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 0.0f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"delayDuckLen", 1},
+                                                           "Delay Duck Length",
+                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 25.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"dryLevel", 1},
                                                            "Dry Level",
@@ -199,6 +214,7 @@ ParameterInstance::ParameterInstance(PetalAudioProcessor& p, Parameters& pm, juc
     value.store(initValue);
     valueSafe = initValue;
     cachedValue.store(initValue);
+    smoothed.reset(48000.0, 0.02);
 
     if (auto* parameter = dynamic_cast<juce::AudioProcessorParameterWithID*>(param.apvts.getParameter(paramID)))
     {
@@ -259,7 +275,13 @@ float ParameterInstance::getSafe() const noexcept
     return valueSafe;
 }
 
-juce::RangedAudioParameter* ParameterInstance::getRangedAudioParameter() const noexcept 
+float ParameterInstance::getSmooth() noexcept
+{
+    smoothed.setTargetValue(get());
+    return smoothed.getNextValue();
+}
+
+juce::RangedAudioParameter *ParameterInstance::getRangedAudioParameter() const noexcept
 {
     return rangedParam;
 }

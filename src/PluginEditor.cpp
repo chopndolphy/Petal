@@ -163,15 +163,23 @@ void PetalAudioProcessorEditor::timerCallback()
 {
     juce::var delayTimesL{juce::Array<juce::var>()};
     juce::var delayTimesR{juce::Array<juce::var>()};
+    juce::var amplitudesL{juce::Array<juce::var>()};
+    juce::var amplitudesR{juce::Array<juce::var>()};
+    juce::var tapStates{juce::Array<juce::var>()};
     juce::var reverbLevelMsr;
 
     for (int tap = 0; tap < 8; tap++){
         delayTimesL.append(audioProcessor.petal.delayTimesL[tap].load());
         delayTimesR.append(audioProcessor.petal.delayTimesR[tap].load());
+        amplitudesL.append(audioProcessor.petal.amplitudesL[tap].load());
+        amplitudesR.append(audioProcessor.petal.amplitudesR[tap].load());
+        tapStates.append(audioProcessor.petal.tapStates[tap].load());
     }
     reverbLevelMsr = audioProcessor.petal.rvb.reverbLevelMsr.load();
 
     webview.emitEventIfBrowserIsVisible("delayTimesL", juce::JSON::toString(delayTimesL));
     webview.emitEventIfBrowserIsVisible("delayTimesR", juce::JSON::toString(delayTimesR));
+    webview.emitEventIfBrowserIsVisible("amplitudesL", juce::JSON::toString(amplitudesL));
+    webview.emitEventIfBrowserIsVisible("amplitudesR", juce::JSON::toString(amplitudesR));
     webview.emitEventIfBrowserIsVisible("reverbLevelMsr", juce::JSON::toString(reverbLevelMsr));
 }

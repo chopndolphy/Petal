@@ -31,27 +31,22 @@ public:
         buffer[size_t(writeIndex)] = input;    
     }
 
-    float readSample(float delayInSamples) const noexcept {
-
+    float readSample(float delayInSamples) const noexcept 
+    {
         jassert(delayInSamples >= 0.0f);
         jassert(delayInSamples <= bufferLength - 1.0f);
 
         int integerDelay = int(delayInSamples);
 
-        int readIndexA = writeIndex - integerDelay;
-        if (readIndexA < 0) {
-            readIndexA += bufferLength;
-        }
-
+        int readIndexA = (writeIndex - integerDelay) % bufferLength;
+        if (readIndexA < 0) { readIndexA += bufferLength; }
         int readIndexB = readIndexA - 1;
-        if (readIndexB < 0) {
-            readIndexB += bufferLength;
-        }
+        if (readIndexB < 0) { readIndexB += bufferLength; }
 
         float sampleA = buffer[size_t(readIndexA)];
         float sampleB = buffer[size_t(readIndexB)];
-
         float fraction = delayInSamples - float(integerDelay);
+        
         return sampleA + fraction * (sampleB - sampleA);
     }
 
@@ -64,6 +59,5 @@ private:
     std::vector<float> buffer;
     int bufferInSamples = 0;
     int writeIndex = 0, bufferLength = 0;
-
 };
 

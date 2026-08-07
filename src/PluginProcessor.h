@@ -57,12 +57,9 @@ public:
 
 
         std::unique_ptr<Parameters> params;
-
         PetalProcessor petal;
 
 private:
-
-    std::array<std::atomic<float>, 8> tapAmplitudes;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PetalAudioProcessor)
 };

@@ -1,25 +1,27 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { getSliderState } from '../../juce.js';
 
-export class PetalSlider extends LitElement {
+export class ValueSlider extends LitElement {
     static properties = {
+        juceID: { type: String, attribute: 'juceid' },
+        
+        value: { type: Number },
         min: { type: Number },
         max: { type: Number },
         suffix: { type: String },
         mode: { type: String },
+        
         exponent: { type: Number },
         sensitivity: { type: Number },
         fineFactor: { type: Number },
+
         default: { type: Number, attribute: 'default' },
         enumerators: {
             converter: {
                 fromAttribute: (v) => (v ? v.split(',').map((s) => s.trim()) : []),
                 toAttribute: (v) => (Array.isArray(v) ? v.join(',') : v),
             },
-        },
-        juceID: { type: String, attribute: 'juceid' },
-        drawing: { type: Object },
-        drawingAux: { type: Object },
+        }
     };
 
     static styles = css`
@@ -48,6 +50,8 @@ export class PetalSlider extends LitElement {
 
     constructor() {
         super();
+
+        this.value = 0;
         this.min = 0;
         this.max = 100;
         this.suffix = "";
@@ -58,40 +62,17 @@ export class PetalSlider extends LitElement {
         this.default = 0;
         /** @type {string[]} */
         this.enumerators = [];
-        this.drawing = null;
-        this.drawingAux = null;
-        this.norm = 0;
 
-        this.addEventListener("pointerdown", this.down);
-        this.addEventListener("pointermove", this.move);
-        this.addEventListener("pointerup", this.up);
     }
 
     firstUpdated() {
         this.input = this.shadowRoot.querySelector('input');
-        this.canvas = this.shadowRoot.querySelector('canvas');
-
-        if (this.canvas) {
-            this.resizeObserver = new ResizeObserver((entries) => {
-                const { width, height } = entries[0].contentRect;
-                const dpr = window.devicePixelRatio || 1;
-
-                this.canvas.width = Math.round(width * dpr);
-                this.canvas.height = Math.round(height * dpr);
-                this.w = width;
-                this.h = height;
-
-                this.drawCanvas();
-            });
-            this.resizeObserver.observe(this.canvas);
-        }        
-        
-        this.juceSlider = getSliderState(this.juceID);
 
         this._onJuceChange = () => {
             if (this.isEditing) return;
             this.updateDisplay(this.juceSlider.getNormalisedValue());
         };
+
         this._onJuceChange();
         this.juceSlider.valueChangedEvent.addListener(this._onJuceChange);
 
@@ -131,121 +112,24 @@ export class PetalSlider extends LitElement {
     }
 
     updated(changedProperties) {
-        // drawingAux carries external state (e.g. tap on/off) that affects the drawing
-        // even when `drawing` itself hasn't changed, so it must also trigger a repaint.
-        if (changedProperties.has('drawing') || changedProperties.has('drawingAux')) {
+        if (changedProperties.has('drawing')) {
             this.drawCanvas();
         }
-    }
-
-    lastClickTime = 0;
-    lastClickYPos = 0;
-    startNorm = 0;
-    mouseState = "idle";
-    isEditing = false;
-
-    down(e) {
-        e.preventDefault();
-
-        const currentTime = Date.now();
-        const deltaTime = currentTime - this.lastClickTime;
-
-        if (this.input && deltaTime < 500 && deltaTime > 50) {
-            this.lastClickTime = 0;
-            this.mouseState = "idle";
-            this.isEditing = true;
-            this.input.value = this.editString(this.juceSlider.getNormalisedValue());
-            this.input.focus();
-            this.input.select();
-            return;
-        }
-
-        if (e.metaKey) {
-            this.reset();
-            return;
-        }
-
-        this.lastClickTime = currentTime;
-        this.lastClickYPos = e.clientY;
-        this.startNorm = this.juceSlider.getNormalisedValue(); 
-        this.setPointerCapture(e.pointerId);
-        this.mouseState = "drag";
-    }
-
-    move(e) {
-        if (this.mouseState !== "drag") return;
-        if (!this.hasPointerCapture(e.pointerId)) return;
-
-        const deltaY = this.lastClickYPos - e.clientY; // up = increase
-        const sens = e.shiftKey ? this.sensitivity * this.fineFactor : this.sensitivity;
-
-        const norm = this.startNorm + deltaY * sens;
-        this.applyNorm(norm);
-    }
-
-    up() {
-        this.mouseState = "idle";
-    }
-
-    reset() {
-        this.applyNorm(this.default);
-    }
-
-    normToValue(norm) {
-        const shaped = Math.pow(Math.min(1, Math.max(0, norm)), this.exponent);
-        return this.min + shaped * (this.max - this.min);
-    }
-
-    valueToNorm(value) {
-        const range = this.max - this.min;
-        if (range === 0) return 0;
-        const frac = Math.min(1, Math.max(0, (value - this.min) / range));
-        return Math.pow(frac, 1 / this.exponent);
-    }
-
-    applyNorm(norm) {
-        norm = Math.min(1, Math.max(0, norm));
-
-        if (this.mode === "enum" && this.enumerators.length > 1) {
-            const n = this.enumerators.length;
-            const index = Math.round(norm * (n - 1));
-            norm = index / (n - 1);
-        }
-
-        this.juceSlider.setNormalisedValue(norm);
-        this.updateDisplay(norm);
     }
 
     updateDisplay(norm) {
         this.norm = norm;
 
-        if (this.canvas) {
-            this.drawCanvas();
-        } else if (this.input) {
+        if (this.input) {
             this.input.value = this.formatDisplay(this.normToValue(norm), norm);
         }
-    }
-
-    drawCanvas() {
-        if (!this.canvas || !this.drawing) return;
-        const ctx = this.canvas.getContext('2d');
-        const dpr = window.devicePixelRatio || 1;
-
-        const w = this.w ?? this.canvas.width / dpr;
-        const h = this.h ?? this.canvas.height / dpr;
-
-        ctx.save();
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.clearRect(0, 0, w, h);
-        this.drawing(ctx, w, h, this.norm, this.drawingAux);
-        ctx.restore();
     }
 
     tryCommit() {
         const raw = this.input.value;
 
         let norm;
-        if (this.mode === "enum") {
+        if (this.mode === "enum") { // mod this only values
             const idx = this.enumerators.findIndex(
                 (s) => s.toLowerCase() === raw.trim().toLowerCase()
             );
@@ -272,7 +156,7 @@ export class PetalSlider extends LitElement {
 
         if (this.mode === "time") {
             const unit = m[2].toLowerCase();
-            if (unit === "s") return num * 1000; 
+            if (unit === "s") return num * 1000;
             return num;
         }
         return num;
@@ -288,9 +172,9 @@ export class PetalSlider extends LitElement {
                 return this.enumerators[i];
             }
             case "time":
-                return String(Math.round(value)); // edit in bare ms
+                return String(Math.round(value));
             default:
-                return String(+value.toFixed(4));  // trims trailing zeros, drops suffix/%
+                return String(+value.toFixed(4)); 
         }
     }
 
@@ -319,8 +203,8 @@ export class PetalSlider extends LitElement {
     }
 
     render() {
-        return this.drawing ? html`<canvas></canvas>` : html`<input></input>`;
+        return html`<input></input>`;
     }
 }
 
-customElements.define('petal-slider', PetalSlider);
+customElements.define('value-slider', ValueSlider);

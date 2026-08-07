@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { reverbLevelMsr } from '../event_listener.js';
 import "./ui/utility.js"
 import { Smoothening } from './ui/utility.js';
+import { color } from './drawings.js';
 
 export class ReverbGraphic extends LitElement {
 
@@ -15,7 +16,7 @@ export class ReverbGraphic extends LitElement {
         #canvas-container {
             position: relative;;
             width: 450px;
-            height: 250px;
+            height: 300px;
         }
 
         #canvas-container > canvas {
@@ -28,7 +29,7 @@ export class ReverbGraphic extends LitElement {
     constructor() {
         super();
         this.width = 450;
-        this.height = 250;
+        this.height = 300;
 
         this.valA = 0;
         this.valB = 0;
@@ -45,6 +46,23 @@ export class ReverbGraphic extends LitElement {
         resizeObserver.observe(this.container);
     }
 
+    createTexture(){
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const size = 128;
+        canvas.width = size; 
+        canvas.height = size;
+        ctx.beginPath(); 
+
+        const grad = ctx.createLinearGradient(size/2, 0, size/2, size);
+        grad.addColorStop(0, color.orange);
+        grad.addColorStop(0.5, color.pink);
+        grad.addColorStop(1, color.tan);
+        ctx.fillStyle = grad
+        ctx.fillRect(0, 0, size, size)
+        return canvas;
+    }
+
     initializeSpace() {
         this.scene = new THREE.Scene();
 
@@ -57,24 +75,30 @@ export class ReverbGraphic extends LitElement {
         this.pos = this.geometry.attributes.position;
         this.srcPos = this.pos.clone();
 
-        const pMaterial = new THREE.PointsMaterial({ size: 1.5 });
-        this.mesh = new THREE.Points(this.geometry, pMaterial);
+        const texture = new THREE.CanvasTexture(this.createTexture());
+        texture.colorSpace = THREE.SRGBColorSpace
+        const material = new THREE.MeshBasicMaterial({ 
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.8,
+            map: texture
+        });
+        this.mesh = new THREE.Mesh(this.geometry, material)
         this.mesh.rotation.x = -Math.PI / 2;
         this.scene.add(this.mesh);
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setSize(this.width, this.height);
+        this.renderer.setPixelRatio(4)
         this.container.appendChild(this.renderer.domElement);
-
-        this.renderer.domElement.addEventListener("click", () => {
-            this.val = 0;
-        });
 
         this.animate();
     }
 
     displace(amount = 1, falloff = 0, dampen = 2) {
         const width = this.geometry.parameters.width;
+        const colorAttr = this.geometry.attributes.color;
+        const vertexColor = new THREE.Color();
 
         for (let i = 0; i < this.pos.count; i++) {
             const x = this.srcPos.getX(i);
@@ -89,8 +113,9 @@ export class ReverbGraphic extends LitElement {
             const carrierFreq = dampen;
             const wave = Math.cos(baseFreq * (1 - envelope) + Math.PI * carrierFreq * x);
             const height = wave * wave;
+            const amplitude = height * envelope;
 
-            this.pos.setXYZ(i, x, y, z + height * envelope);
+            this.pos.setXYZ(i, x, y, z + amplitude);
         }
         this.pos.needsUpdate = true;
         this.geometry.computeVertexNormals();

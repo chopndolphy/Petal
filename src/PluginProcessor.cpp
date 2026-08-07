@@ -124,33 +124,38 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
         buffer.clear(i, 0, buffer.getNumSamples());
     }
 
-    petal.setTime(params->freeTimeL->get(),
-                  params->freeTimeR->get(),
-                  params->syncTimeL->get(),
-                  params->syncTimeR->get(),
+    petal.setDelayTapTimes(params->freeTimeL->get(),
+                           params->freeTimeR->get(),
+                           params->syncTimeL->get(),
+                           params->syncTimeR->get(),
+                           // delay time modification
+                           params->positionL->get(),
+                           params->skewL->get(),
+                           params->positionR->get(),
+                           params->skewR->get(),
+                           params->round->get(),
+                           // sync
+                           params->isSyncL->get(),
+                           params->isSyncR->get(),
+                           params->stereoLock->get());
 
-                  params->positionL->get(),
-                  params->skewL->get(),
-                  params->positionR->get(),
-                  params->skewR->get(),
+    petal.setDelayAndPitchAttributes(0, 0, params->windowSize->get(),
+                                params->delayDuckAmt->get(),
+                                params->delayDuckLen->get());
 
-                  params->isSyncL->get(),
-                  params->isSyncR->get(),
-                  params->stereoLock->get());
-
-    petal.setWindowSize(params->windowSize->get());
-
-    petal.rvb.setValues(params->reverbLevel->get(),
-                        params->reverbDecayTime->get(),
-                        params->reverbLPF->get(),
-                        params->reverbHPF->get(),
-                        params->reverbSize->get());
+    petal.rvb.setReverbAttributes(params->reverbLevel->get(),
+                                params->reverbDecayTime->get(),
+                                params->reverbLPF->get(),
+                                params->reverbHPF->get(),
+                                params->reverbSize->get(),
+                                params->reverbDuckAmt->get(),
+                                params->reverbDuckLen->get());
 
     for(int tap = 0; tap < 8; tap++){
-        petal.setValues(tap,
-                        params->tapState[tap]->get(),
-                        params->tapShiftAmt[tap]->get(),
-                        params->tapReverbAmt[tap]->get());
+        petal.setDelayTapAttributes(tap,
+                                    params->tapState[tap]->get(),
+                                    params->tapShiftAmt[tap]->get(),
+                                    params->tapReverbAmt[tap]->get());
     }
     petal.processBlock(buffer);
 }

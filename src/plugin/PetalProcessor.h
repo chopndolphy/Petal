@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include <cmath>
 #include <limits>
+#include "../dsp/Utility.h"
 #include "../dsp/Delayline.h"
 #include "../dsp/reverb/Reverb.h"
 
@@ -9,35 +10,25 @@ class PetalProcessor
 public:
     PetalProcessor() {}
 
-    void prepareToPlay(double sampleRate, int samplesPerBlock)
-    {
-        this->sampleRate = sampleRate;
-        dlL.setMaximumDelayInSamples(sampleRate * 10);
-        dlR.setMaximumDelayInSamples(sampleRate * 10);
-        dlL.reset();
-        dlR.reset();
+    void prepareToPlay(double sampleRate, int samplesPerBlock);
+    void processBlock(juce::AudioBuffer<float> &buffer) noexcept;
 
-        rvb.prepareToPlay(sampleRate, samplesPerBlock);
-        rvbBuffer.setSize(2, samplesPerBlock, false, false, true);
+    void setDelayTapAttributes(int tap, bool state, int shiftAmountInSemitones, float reverbAmount);
+    void setDelayTapTimes(float freeTimeLInMs, float freeTimeRInMs, int syncIndexL, int syncIndexR,
+                 float positionL, float skewL, float positionR, float skewR, float round,
+                 bool isSyncL, bool isSyncR, bool stereoLock);
 
-        updateCorrelationSizes();
-        
-        for (auto &t : tp)
-            for (int sub = 0; sub < numOverlaps; ++sub)
-            {
-                float p = (float)sub / (float)numOverlaps;
-                t.phasePrevSub[sub] = p;
-                t.simOffsetL[sub] = 0.0f;
-                t.simOffsetR[sub] = 0.0f;
-            }
+    void setBPM(juce::AudioPlayHead *playhead);
+    void setDelayAndPitchAttributes(float feedbackAmt, int feedbackLen, int windowSizeInMilliseconds,
+                                                    float setDuckingAmount, float setDuckingTime);
 
-        for (int tap = 0; tap < 8; tap++){
-            tp[tap].gain.reset(sampleRate, 0.01f);
-        }
-    }
-    
+    std::array<std::atomic<float>, 8> amplitudesL, amplitudesR, delayTimesL, delayTimesR, tapStates;
+    PetalReverb rvb;
+    juce::AudioBuffer<float> rvbBuffer;
 
-    static float warpTapPosition(float basePos, float pos, float exponent)
+private:
+    void advancePhase(int tap) noexcept;
+    static float warpTapPosition(float basePos, float pos, float exponent, float round) // round should be a factor
     {
         if (basePos <= pos)
         {
@@ -53,237 +44,37 @@ public:
         }
     }
 
-    void setTime(float freeTimeLInMs, float freeTimeRInMs, int syncIndexL, int syncIndexR,
-                 float positionL, float skewL, float positionR, float skewR,
-                 bool isSyncL, bool isSyncR, bool stereoLock)
-    {
-        const int lastIndex = (int) syncTimeOptions.size() - 1;
-        float syncTimeLInMs = 1000.0f / ((bpm / 60.0f) * syncTimeOptions[(size_t) juce::jlimit(0, lastIndex, syncIndexL)]);
-        float syncTimeRInMs = 1000.0f / ((bpm / 60.0f) * syncTimeOptions[(size_t) juce::jlimit(0, lastIndex, syncIndexR)]);
+    static constexpr std::array<double, 11> syncTimeOptions = {
+        0.03125, 0.04167, 0.0625, 0.0833,
+        0.125, 0.25, 0.333, 0.5,
+        0.666, 0.75, 1.0 };
 
-        float timeLInMs = isSyncL ? syncTimeLInMs : freeTimeLInMs;
-        float timeRInMs = stereoLock ? timeLInMs : (isSyncR ? syncTimeRInMs : freeTimeRInMs);
-
-        float timeLInSamples = (timeLInMs / 1000.0f) * sampleRate;
-        float timeRInSamples = (timeRInMs / 1000.0f) * sampleRate;
-
-        float effectivePositionR = stereoLock ? positionL : positionR;
-        float effectiveSkewR = stereoLock ? skewL : skewR;
-
-        float exponentL = std::pow(2.0f, skewL * 4.5f);
-        float exponentR = std::pow(2.0f, effectiveSkewR * 4.5f);
-
-        for (int tap = 1; tap < 8; tap++)
-        {
-            float basePos = (1.0f / 8.0f) * tap;
-            float warpedL = warpTapPosition(basePos, positionL, exponentL);
-            float warpedR = warpTapPosition(basePos, effectivePositionR, exponentR);
-            delayTimesL[tap].store(warpedL);
-            delayTimesR[tap].store(warpedR);
-
-            tp[tap].freeTimeL = warpedL * timeLInSamples;
-            tp[tap].freeTimeR = warpedR * timeRInSamples;
-        }
-    }
-
-    void setBPM(juce::AudioPlayHead *playhead)
-    {
-        if (playhead == nullptr)
-        {
-            return;
-        }
-        if (playhead->getPosition()->getBpm().hasValue())
-        {
-            this->bpm = *playhead->getPosition()->getBpm();
-        }
-    }
-
-    void setFeedback(float feedbackAmt)
-    {
-        this->feedbackAmt = feedbackAmt / 110;
-    }
-
-    void processBlock(juce::AudioBuffer<float> &buffer)
-    {
-        auto readDataL = buffer.getReadPointer(0);
-        auto readDataR = buffer.getReadPointer(1);
-        rvbBuffer.setSize(2, buffer.getNumSamples(), false, false, true);
-        rvbBuffer.clear();
-
-        const float gain = 2.0f / (float)numOverlaps;
-
-        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
-        {
-            dlL.writeSample(readDataL[sample] + feedbackL);
-            dlR.writeSample(readDataR[sample] + feedbackR);
-
-            for (int tap = 0; tap < 8; tap++)
-            {
-                advancePhase(tap);
-                float pitchShiftedL = 0.0f;
-                float pitchShiftedR = 0.0f;
-
-                for (int sub = 0; sub < numOverlaps; sub++)
-                {
-                    float phase = tp[tap].phase + (float)sub / (float)numOverlaps;
-                    if (phase >= 1.0f)
-                        phase -= 1.0f;
-
-
-                        const float prevPhase = tp[tap].phasePrevSub[sub];
-                        if (std::abs(phase - prevPhase) > 0.5f) // wrapped this sample
-                        {
-                            const float endPosL = tp[tap].freeTimeL + windowSizeInSamples * prevPhase + tp[tap].simOffsetL[sub];
-                            const float endPosR = tp[tap].freeTimeR + windowSizeInSamples * prevPhase + tp[tap].simOffsetR[sub];
-
-                            const float startL = tp[tap].freeTimeL + windowSizeInSamples * phase;
-                            const float startR = tp[tap].freeTimeR + windowSizeInSamples * phase;
-
-                            tp[tap].simOffsetL[sub] = computeSimOffset(dlL, endPosL, startL);
-                            tp[tap].simOffsetR[sub] = computeSimOffset(dlR, endPosR, startR);
-                        }
-
-                        tp[tap].phasePrevSub[sub] = phase;
-                        // -----------------------------------------------------------
-                        float window = 0.5f * (1.0f - std::cos(2.0f * pi * phase));
-                        float windowPos = windowSizeInSamples * phase;
-                        float delayL = tp[tap].freeTimeL + windowPos + tp[tap].simOffsetL[sub];
-                        float delayR = tp[tap].freeTimeR + windowPos + tp[tap].simOffsetR[sub];
-
-                        pitchShiftedL += dlL.readSample(delayL) * window * tp[tap].gain.getNextValue();
-                        pitchShiftedR += dlR.readSample(delayR) * window * tp[tap].gain.getNextValue();
-                }
-
-                feedbackL = pitchShiftedL * feedbackAmt;
-                feedbackR = pitchShiftedR * feedbackAmt;
-
-                buffer.addSample(0, sample, pitchShiftedL * gain);
-                buffer.addSample(1, sample, pitchShiftedR * gain);
-                rvbBuffer.addSample(0, sample, pitchShiftedL * gain * tp[tap].reverbAmount);
-                rvbBuffer.addSample(1, sample, pitchShiftedR * gain * tp[tap].reverbAmount);
-            }
-        }
-
-        rvb.processBlock(rvbBuffer);
-        buffer.addFrom(0, 0, rvbBuffer, 0, 0, buffer.getNumSamples());
-        buffer.addFrom(1, 0, rvbBuffer, 1, 0, buffer.getNumSamples());
-    }
-
-    void advancePhase(int tap)
-    {
-        float rate = ((1.0f - tp[tap].shiftAmount) * 1000.0f) / windowSizeInMilliseconds;
-        float phaseAngle = rate / sampleRate;
-
-        tp[tap].phase += phaseAngle;
-        if (tp[tap].phase >= 1.0f) { tp[tap].phase -= 1.0f; }
-        if (tp[tap].phase <= 0.0f) { tp[tap].phase += 1.0f; }
-    }
-
-    void setValues(int tap, bool state, int shiftAmountInSemitones, float reverbAmount)
-    {
-        float shiftAmount = std::exp(0.057762265f * shiftAmountInSemitones);
-        tp[tap].gain.setTargetValue(state);
-        tp[tap].shiftAmount = shiftAmount;
-        tp[tap].reverbAmount = reverbAmount;
-    }
-
-    void setWindowSize(int windowSizeInMilliseconds)
-    {
-        this->windowSizeInMilliseconds = windowSizeInMilliseconds;
-        this->windowSizeInSamples = (sampleRate / 1000.0f) * windowSizeInMilliseconds;
-    }
-
-    std::array<std::atomic<float>, 8> amplitudesL, amplitudesR;
-    std::array<std::atomic<float>, 8> delayTimesL, delayTimesR;
-
-    PetalReverb rvb;
-    juce::AudioBuffer<float> rvbBuffer;
-
-private:
+    double sampleRate = 48000, bpm = 120.0;
+    float pi = juce::MathConstants<float>::pi;
+    float windowSizeInSamples = (float)(sampleRate / 2), windowSizeInMilliseconds = 200.0;
     static constexpr int numOverlaps = 2;
-    static constexpr int kMaxCorrTaps = 256;
-    double bpm = 120.0;
+
+    bool feedbackSuppression = false;
+    float feedbackAmt = 0.0f, feedbackL = 0.0f, feedbackR = 0.0f;
+    Delayline dlL, dlR;
+    Correlation cr;
+    juce::SmoothedValue<float> duckEnv;
+    float duckAmt = 0.0f, duckLen = 0.0f;
 
     struct tapAttributes
     {
         float phase = 0.0f;
         float phaseInv = 0.0f;
         juce::SmoothedValue<float> gain;
-      //  bool isActive = true;
-        float freeTimeL = 1.0f;
-        float freeTimeR = 1.0f;
+        float timeL = 1.0f;
+        float timeR = 1.0f;
         float shiftAmount = 1.0f;
         float reverbAmount = 0.0f;
 
         std::array<float, numOverlaps> phasePrevSub{{}};
         std::array<float, numOverlaps> simOffsetL{{}};
         std::array<float, numOverlaps> simOffsetR{{}};
-
     };
+
     std::array<tapAttributes, 8> tp;
-
-    static constexpr std::array<double, 19> syncTimeOptions = {
-        0.03125, 0.04167, 0.0625, 0.0833,
-        0.125, 0.25, 0.333, 0.5,
-        0.666, 0.75, 0.8, 1.0,
-        1.333, 1.5, 2.0, 3.0,
-        4.0, 6.0, 8.0};
-
-    double sampleRate = 48000;
-    float pi = juce::MathConstants<float>::pi;
-    float windowSizeInSamples = (float)(sampleRate / 2), windowSizeInMilliseconds = 200.0;
-
-    juce::Random rd;
-    bool feedbackSuppression = false;
-    float feedbackAmt = 0.0f, feedbackL = 0.0f, feedbackR = 0.0f;
-    Delayline dlL, dlR;
-
-    float corrMaxLagInMs = 8.0f;
-    float corrFrameInMs = 4.0f;
-    int corrStride = 2;        
-    int maxLagSamples = 0;     
-    int corrTaps = 0;          
-
-    void updateCorrelationSizes()
-    {
-        maxLagSamples = (int)(corrMaxLagInMs * sampleRate / 1000.0f);
-        int frameSamples = (int)(corrFrameInMs * sampleRate / 1000.0f);
-        corrTaps = juce::jlimit(4, kMaxCorrTaps, frameSamples / juce::jmax(1, corrStride));
-    }
-
-    float computeSimOffset(Delayline &dl, float endPos, float startNominal)
-    {
-        const float maxRead = (float)(sampleRate * 10.0 - 2.0);
-        auto clampDelay = [maxRead](float d)
-        { return juce::jlimit(1.0f, maxRead, d); };
-
-        float refBuf[kMaxCorrTaps];
-        for (int i = 0; i < corrTaps; ++i)
-            refBuf[i] = dl.readSample(clampDelay(endPos + (float)(i * corrStride)));
-
-        float bestScore = -std::numeric_limits<float>::max();
-        float bestLag = 0.0f; 
-
-        for (int lag = -maxLagSamples; lag <= maxLagSamples; ++lag)
-        {
-            float dot = 0.0f, energy = 0.0f;
-            for (int i = 0; i < corrTaps; ++i)
-            {
-                float c = dl.readSample(clampDelay(startNominal + (float)(lag + i * corrStride)));
-                dot += refBuf[i] * c;
-                energy += c * c;
-            }
-
-            if (energy < 1.0e-6f)
-                continue; 
-
-            float score = dot / std::sqrt(energy + 1.0e-9f) - 1.0e-4f * (float)std::abs(lag);
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestLag = (float)lag;
-            }
-        }
-        return bestLag;
-    }
 };

@@ -54,6 +54,7 @@ export class PetalButton extends LitElement {
             this._onJuceChange();
             this.juceSlider.valueChangedEvent.addListener(this._onJuceChange);
         }
+        
     }
 
     toggle() {

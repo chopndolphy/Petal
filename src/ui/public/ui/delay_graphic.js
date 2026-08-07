@@ -1,11 +1,12 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import * as THREE from 'three';
+import { getSliderState } from '../juce.js';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { delayTimesL, delayTimesR } from '../event_listener.js';
 import { Smoothening } from './ui/utility.js';
-
+import { color, lerpColor } from './drawings.js';
 
 export class DelayGraphic extends LitElement {
     arcs = [];
@@ -43,6 +44,7 @@ export class DelayGraphic extends LitElement {
 
     firstUpdated() {
         this.container = this.renderRoot.querySelector("#canvas-container");
+        
         const resizeObserver = new ResizeObserver((entries) => {
             const { width, height } = entries[0].contentRect;
             if (width > 0 && height > 0) {
@@ -53,6 +55,12 @@ export class DelayGraphic extends LitElement {
             }
         });
         resizeObserver.observe(this.container);
+
+        // initialize attachment sliders to JUCE
+        this.positionLSlider = getSliderState("positionL");
+        this.skewLSlider = getSliderState("skewL");
+        this.positionRSlider = getSliderState("positionR");
+        this.skewRSlider = getSliderState("skewR");
     }
 
     initializeSpace() {
@@ -74,6 +82,15 @@ export class DelayGraphic extends LitElement {
         this.camera.lookAt(0, 0, 0);
         this.renderer.render(this.scene, this.camera);
 
+        // pointer handlers
+        this.mouseState = 'idle';
+        this.lastClickYPos = null;
+
+        this.onMouseDown = (e) => {
+            this.mouseState = 'drag';
+            this.lastClickYPos = e.clientY;
+        }
+
         this.onMouseMove = (e) => {
             const rect = this.container.getBoundingClientRect();
             const isLeft = (e.clientX - rect.left) < this.width / 2 ? -1 : 1;
@@ -81,6 +98,15 @@ export class DelayGraphic extends LitElement {
             this.sx.set(isLeft * r * 0.5);
             this.sy.set(-r * 0.5);
             this.sz.set(-r * -0.7);
+
+            if (this.mouseState == 'drag' && isLeft === -1){
+                this.positionLSlider.setNormalisedValue(0);
+                this.skewLSlider.setNormalisedValue(0);
+
+            } else if (this.mouseState == 'drag' && isLeft === 1){
+                this.positionRSlider.setNormalisedValue(1);
+                this.skewRSlider.setNormalisedValue(1);
+            }
         };
 
         this.onMouseLeave = () => {
@@ -90,9 +116,14 @@ export class DelayGraphic extends LitElement {
             this.sz.set(r);
         };
 
+        this.onMouseUp = (e) => {
+            this.mouseState = 'idle';
+        }
+
+        this.renderer.domElement.addEventListener("mousedown", this.onMouseDown);
         this.renderer.domElement.addEventListener("mousemove", this.onMouseMove);
         this.renderer.domElement.addEventListener("mouseleave", this.onMouseLeave);
-
+        this.renderer.domElement.addEventListener("mouseup", this.onMouseUp);
         this.animate();
     }
 
@@ -105,19 +136,64 @@ export class DelayGraphic extends LitElement {
         return positions;
     }
 
+    
+    sampleGradientColors(steps, direction = false, tap = 0.5, isActive = true) {
+        const canvas = document.createElement('canvas');
+        canvas.width = steps;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, steps, 0);
+
+
+        let a = "#CB8B93" // og pink
+        let b = "#E3895A" // og orange
+        let c = "#BEDBBA"//"#2d2d2d"
+        grad.addColorStop(0, !direction ? b : a);
+        grad.addColorStop(!direction ? 0.3 : 0.7, direction ? c : a);
+        grad.addColorStop(1, !direction ? b : b);
+
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, steps, 1);
+
+        const imgData = ctx.getImageData(0, 0, steps, 1).data;
+        const colors = [];
+
+        const srgbToLinear = (c) =>
+            c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+
+            for (let i = 0; i < steps; i++) {
+                const r = srgbToLinear(imgData[i * 4] / 255);
+                const g = srgbToLinear(imgData[i * 4 + 1] / 255);
+                const b = srgbToLinear(imgData[i * 4 + 2] / 255);
+                colors.push(r, g, b);
+            }
+            return colors;
+    }
+    
     createArcs() {
         for (let channel = 0; channel < 2; channel++) {
             const startAngle = channel === 0 ? Math.PI * 0.75 : Math.PI * 1.5;
             const endAngle = startAngle + Math.PI * 0.75;
-            const xOffset = channel === 0 ? -0.0625 : 0.0625;
+            const xOffset = channel === 0 ? -0.03125 : 0.03125;
+
+
 
             for (let tap = 0; tap < 8; tap++) {
                 const radius = channel === 0 ? delayTimesL[tap] : delayTimesR[tap];
-
                 const geometry = new LineGeometry();
-                geometry.setPositions(this.#arcPositions(xOffset, radius, startAngle, endAngle));
+                const positions = this.#arcPositions(xOffset, radius, startAngle, endAngle);
 
-                const material = new LineMaterial({ color: 'white', linewidth: 2 });
+                geometry.setPositions(positions);
+                const segments = positions.length / 3; // one RGB triple needed per vertex
+
+                geometry.setColors(this.sampleGradientColors(segments, channel === 0, 0.125 * tap));
+
+
+                const c = lerpColor(color.pink, color.orange, 0.125 * tap);
+                const material = new LineMaterial({ linewidth: 3, 
+                    vertexColors: true, 
+                    transparent: true,
+                });
                 material.resolution.set(this.width, this.height);
 
                 const arc = new Line2(geometry, material);

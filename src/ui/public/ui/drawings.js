@@ -1,29 +1,52 @@
-const colA = '#9a8240' // faint tan
-const colB = '#54865f' // faint orange
-const colC = '#40677d' // pink
-const colD = '#848b93' // almost red
+export const color = {
+    pink: "#CB8B93", // og pink
+    orange: "#E3895A", // og orange
+    tan: "#BEDBBA", //"#2d2d2d"
+    grey: "#2d2d2d"
+}
 
-const rgb = (c) => `#${c.map(v => v.toString(16).padStart(2, '0')).join('')}`;
+// color helpers
+export const hexToRgb = (hex) => {
+    const n = parseInt(hex.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
 
-const lerp = (a, b, t) => { return a * t + b * (1 - t); }
+export const rgb = (c) => `#${c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+
+export const lerpColor = (hexA, hexB, t) => {
+    const a = hexToRgb(hexA);
+    const b = hexToRgb(hexB);
+    return rgb(a.map((v, i) => v + (b[i] - v) * t));
+};
+
+function withAlpha(hex, alpha) {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.substring(0, 2), 16);
+    const g = parseInt(h.substring(2, 4), 16);
+    const b = parseInt(h.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+
 
 export function drawLock(ctx, w, h, val) {
-    const color = 'white'
     ctx.beginPath();
     ctx.roundRect(w * 0.2, h * 0.48, w * 0.6, h * 0.38, 2);
-    ctx.fillStyle = color;
+    ctx.fillStyle = color.pink;
     ctx.fill();
 
-    const cx = w * 0.5;
-    const cy = h * 0.48;
-    const r = w * 0.18;
+    const cx = w * 0.5, cy = h * 0.5, r = w * 0.18;
+    const unlocked = val === 0 ? 0 : h * 0.15;
+
     ctx.beginPath();
-    ctx.moveTo(cx - r, cy);
-    ctx.lineTo(cx - r, h * 0.4);
-    ctx.arc(cx, h * 0.4, r, Math.PI, 0);
-    ctx.lineTo(cx + r, cy);
-    ctx.strokeStyle = color;
+    ctx.moveTo(cx - r, cy - unlocked);
+    ctx.lineTo(cx - r, h * 0.4 - unlocked);
+    ctx.arc(cx, h * 0.4 - unlocked, r, Math.PI, 0);
+    ctx.lineTo(cx + r, cy - unlocked);
+
+    ctx.strokeStyle = color.pink;
     ctx.lineWidth = w * 0.07;
+    ctx.lineCap = "round";
     ctx.stroke();
 }
 
@@ -56,11 +79,44 @@ export function drawTapState(ctx, w, h, val){
 }
 
 export function drawSelectReverb(ctx, w, h, val) {
+    const cx = w/2, cy = h/2, iconSize = w * 0.9;
+
+    for(let i = 0; i < 48; i++){
+        const xPos = w * 0.05 + (w * 0.5/48) * i
+        const accel = i * 0.05;
+        let angle = Math.sin((Math.PI * 2 * accel /48) * i)
+        angle *= angle;
+        const yPos = cy + angle * 10;
+
+        if (i === 0) { ctx.moveTo(xPos, yPos) }
+        else { ctx.lineTo(xPos, yPos) }
+    }
+
+    for (let i = 48; i >= 48; i--) {
+        const xPos = w * 0.05 + (w * 0.5 / 48) * i
+        const accel = i * 0.05;
+        let angle = Math.sin((Math.PI * 2 * accel / 48) * i)
+        angle *= angle;
+        const yPos = cy + angle * 10;
+        { ctx.lineTo(xPos, yPos) }
+    }
+
+    ctx.strokeStyle = 'white'
+    ctx.stroke()
 
 }
 
 export function drawSelectDelay(ctx, w, h, val) {
+    const cx = w/2, cy = h/2;
 
+    for(let i = 0; i < 4; i++){
+        const radius = (w * 0.45/4) * (i + 1)
+        ctx.arc(cx, cy, radius, Math.PI * 0.75, Math.PI * 0.25, true);
+    }
+
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = "round"
+    ctx.stroke()
 }
 
 
@@ -74,71 +130,117 @@ function drawInput(){
     ctx.fillRect(0, 0, w, h);
 }
 
-export function drawPitch(ctx, w, h, value = 0.5) {
-    ctx.beginPath()
-    for(let i = 0; i < 24; i++){
-        const angle = Math.cos(Math.PI * value + (Math.PI / 24) * i)
-        const xPos = w/2 + angle * w * 0.45
-        ctx.arc(xPos - 0.5, h/2 - 0.5, 1, 0, Math.PI * 2, false);
+export function drawPitch(ctx, w, h, value = 0.5, aux = {}) {
+    const { tapIndex = 0, state = true } = aux;
+
+    const norm = Math.min(Math.max(tapIndex / 8, 0), 1);
+    const baseColor = state ? lerpColor(color.pink, color.orange, norm) : color.grey;
+    const dotR = 1.5;
+
+    ctx.beginPath()    
+    for (let i = 0; i < 24; i++) {
+        const theta = Math.PI * value + (Math.PI * 2 / 24) * i
+        const depth = Math.sin(theta) 
+        if (depth <= 0) continue    
+
+        const xPos = w / 2 + Math.cos(theta) * w * 0.45
+        ctx.moveTo(xPos - dotR / 2 + 1, h / 2 - dotR / 2) // moveTo before each arc to avoid connecting lines
+        ctx.arc(xPos - dotR / 2, h / 2 - dotR / 2, dotR, 0, Math.PI * 2, false)
     }
-    ctx.fillStyle = 'white'
+    ctx.fillStyle = state ? 'grey' : color.grey
     ctx.fill()
 
     ctx.beginPath()
-    ctx.moveTo(w * 0.05 + w * 0.9 * value, h * 0.15)
-    ctx.lineTo(w * 0.05 + w * 0.9 * value, h * 0.85)
-    ctx.strokeStyle = "white"
+    ctx.moveTo(w * 0.05 + w * 0.9 * value, h * 0.25)
+    ctx.lineTo(w * 0.05 + w * 0.9 * value, h * 0.75)
+    ctx.lineWidth = 2
+    ctx.lineCap = "round"
+    ctx.strokeStyle = baseColor
     ctx.stroke()
+
+    const xPos = w * 0.05 + w * 0.9 * value;
+    const yPos = h * 0.75 + h * 0.5 * -value;
+    ctx.beginPath()
+    ctx.arc(xPos, yPos, 3, 0, Math.PI * 2, false)
+    ctx.fillStyle = baseColor
+    ctx.fill()
+
+    ctx.save();
+    ctx.globalCompositeOperation = "source-atop";
+    const grad = ctx.createRadialGradient(xPos, yPos, 0, xPos, yPos, w * 0.5);
+    grad.addColorStop(0, lerpColor(color.tan, baseColor, 0));
+    grad.addColorStop(1, lerpColor(color.tan, baseColor, 1));
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle = grad;
+    ctx.stroke();
+    ctx.restore();
 }
 
 
 // reverb send
-export function drawReverbSend(ctx, w, h, val = 0) {
-    const heightPercentage = h / 80; // this is hard coded because i didnt want to pass another val :()
-    for (let i = 0; i < 8; i++) {
-        drawLineThickness(ctx, w, h, i, val);
-    }
-}
+export function drawReverbSend(ctx, w, h, val = 0, aux = {}) {
+    const { tapIndex = 0, state = true } = aux;
 
-function drawLineThickness(ctx, w, h, index, amount = 1) {
+    const norm = Math.min(Math.max(tapIndex / 8, 0), 1);
+    const baseColor = state ? lerpColor(color.pink, color.orange, norm) : color.grey;
+
     const resolution = 128;
-    const val = Math.min(Math.max(amount * 8 - index, 0), 1);
-    const windowWidth = 16 * (8 - index * amount);
 
-    const barSpacing = w * 0.9 / 8;
-    const barX = w * 0.05 + barSpacing * index;
+    for (let index = 0; index < 8; index++) {
+        const lineVal = Math.min(Math.max(val * 8 - index, 0), 1);
+        const windowWidth = 16 * (8 - index * val);
 
-    ctx.beginPath();
+        const barSpacing = w * 0.9 / 8;
+        const barX = w * 0.05 + barSpacing * index;
 
-    for (let i = 0; i < resolution; i++) {
-        const y = h * 0.05 + (h * 0.9 / resolution) * i;
-        const p = i - (resolution - windowWidth);
+        ctx.beginPath();
 
-        let k = 0;
-        if (p >= 0 && p <= windowWidth) {
-            k = 0.5 * (1 - Math.cos((Math.PI / windowWidth) * p)) * val;
+        for (let i = 0; i < resolution; i++) {
+            const y = h * 0.05 + (h * 0.9 / resolution) * i;
+            const p = i - (resolution - windowWidth);
+
+            let k = 0;
+            if (p >= 0 && p <= windowWidth) {
+                k = 0.5 * (1 - Math.cos((Math.PI / windowWidth) * p)) * lineVal;
+            }
+            const x = barX + k * w * 0.0625;
+
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
         }
-        const x = barX + k * w * 0.0625;
 
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        ctx.lineTo(barX, h * 0.95);
+        ctx.closePath();
+
+        ctx.fillStyle = baseColor;
+        ctx.fill();
+
+        ctx.strokeStyle = baseColor;
+        ctx.lineWidth = 1.5;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.stroke();
+
+        ctx.save();
+        ctx.globalCompositeOperation = "source-atop";
+
+        const grad = ctx.createRadialGradient(w * 0.05, h * 0.95, 0, w * 0.05, h * 0.95, w * 0.5);
+        grad.addColorStop(0, lerpColor(color.tan, baseColor, 0));
+        grad.addColorStop(1, lerpColor(color.tan, baseColor, 1));
+
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.strokeStyle = grad;
+        ctx.stroke();
+        ctx.restore();
     }
-
-    ctx.lineTo(barX, h * 0.95);
-    ctx.closePath();
-
-    ctx.fillStyle = "white"
-    ctx.fill();    
-    ctx.strokeStyle = "white"
-    ctx.lineWidth = 1.5;
-    ctx.lineJoin = "round"
-    ctx.lineCap = "round"
-    ctx.stroke();
 }
+
 
 // 
 
-export function drawSkew(ctx, w, h, val = 0){
+export function drawSkew(ctx, w, h, val = 0, aux = {}){
     const radius = w * 0.45 * (val * 0.75 + 0.25);
 
     ctx.beginPath();
@@ -153,22 +255,25 @@ export function drawSkew(ctx, w, h, val = 0){
 
 }
 
-export function drawPosition(ctx, w, h, val = 0) {
+export function drawPosition(ctx, w, h, val = 0, aux = {}) {
 
 }
 
 
 // reverb size
-export function drawReverbSize(ctx, w, h, val = 0) {
+export function drawReverbSize(ctx, w, h, val = 0, aux = {}) {
     const cx = w / 2;
     const cy = h / 2;
     const r = w * 0.35;
 
     ctx.lineJoin = "round"
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'grey';
-    ctx.fillStyle = 'white';
 
+    const grad = ctx.createLinearGradient(w * 0.05, h / 2, w * 0.95, h / 2)
+    grad.addColorStop(0.35, color.pink);
+    grad.addColorStop(0.75, withAlpha(color.orange, 0.5));
+
+    ctx.fillStyle = grad
     // back frame
     ctx.beginPath();
     for (let i = 0; i < 3; i++) {
@@ -179,6 +284,7 @@ export function drawReverbSize(ctx, w, h, val = 0) {
         ctx.moveTo(cx, cy);
         ctx.lineTo(xPos, yPos);
     }
+    ctx.strokeStyle = "#333333"
     ctx.stroke();
 
 
@@ -192,6 +298,7 @@ export function drawReverbSize(ctx, w, h, val = 0) {
         else ctx.lineTo(xPos, yPos);
     }
     ctx.closePath();
+    ctx.strokeStyle = "#666666"
     ctx.stroke();
 
     // inner fill
@@ -229,7 +336,7 @@ export function drawReverbSize(ctx, w, h, val = 0) {
 
 
 
-export function drawReverbDampening(ctx, w, h, val = 0){
+export function drawReverbDampening(ctx, w, h, val = 0, aux = {}){
     const cx = w/2
     const cy = h/2
 
@@ -265,27 +372,38 @@ export function drawReverbTone(canvas, lp = 1, hp = 1) {
     }
 
     // filter response
-    const drawFilterResponse = (edge, knee, floor) => {
+    const drawFilterResponse = (edge, knee, floor, isHP = true) => {
         ctx.beginPath();
         ctx.moveTo(edge, mid);
         ctx.lineTo(knee, mid);
         ctx.quadraticCurveTo(floor, mid, floor, bot);
-        ctx.strokeStyle = "white";
+
+        const c = isHP ? color.pink : color.orange;
+        ctx.strokeStyle = color;
         ctx.lineWidth = 3;
+        ctx.lineCap = 'round'
         ctx.stroke();
+
+        ctx.lineTo(isHP ? w * 0.95 : w * 0.05, bot)
+
+        const grad = ctx.createRadialGradient(knee, mid, 0, knee, mid, w);
+        grad.addColorStop(0, withAlpha(c, 0.5))
+        grad.addColorStop(1, withAlpha(color.tan, 0))
+        ctx.fillStyle = grad
+        ctx.fill()
     };
 
     const kneeW = w * 0.2;
     const lpKnee = w * 0.05 + w * 0.7 * lp;
-    drawFilterResponse(w * 0.05, lpKnee, lpKnee + kneeW);
+    drawFilterResponse(w * 0.05, lpKnee, lpKnee + kneeW, false);
 
     const hpKnee = w * 0.05 + w * 0.7 * hp;
-    drawFilterResponse(w * 0.95, hpKnee, hpKnee - kneeW);
+    drawFilterResponse(w * 0.95, hpKnee, hpKnee - kneeW, true);
 }
 
 
 
-export function drawReverbDecay(ctx, w, h, val = 0) {
+export function drawReverbDecay(ctx, w, h, val = 0, aux = {}) {
     // dots 
     for(let i = 0; i < 12; i++){
         let xPos = w * 0.1 + ((w * 0.8 / 12) * i);
@@ -310,12 +428,18 @@ export function drawReverbDecay(ctx, w, h, val = 0) {
             else { ctx.lineTo(xPos, yPos); }
         }
 
-        ctx.strokeStyle = 'white';
-        ctx.stroke();
+        const grad = ctx.createLinearGradient(w * 0.05, h/2, w * 0.95, h/2)
+        grad.addColorStop(0.35, withAlpha(color.pink, 0.5));
+        grad.addColorStop(0.65, color.orange);
+        ctx.strokeStyle = grad;
+        ctx.lineCap = "round"
+        ctx.lineWidth = 1.5
+        ctx.stroke()
+
     }
 }
 
-export function drawDial(ctx, w, h, val = 0){
+export function drawDial(ctx, w, h, val = 0, aux = {}){
     const cx = w/2, cy = h/2;
 
     const startAngle = Math.PI * 0.75;
@@ -339,7 +463,7 @@ export function drawDial(ctx, w, h, val = 0){
     ctx.fill()
 }
 
-export function drawFeedback(ctx, w, h, val = 0){
+export function drawFeedback(ctx, w, h, val = 0, aux = {}){
     const cx = w / 2, cy = h / 2;
     const numDots = 64;
 
@@ -355,3 +479,6 @@ export function drawFeedback(ctx, w, h, val = 0){
         ctx.fill()
     }
 }
+
+
+
