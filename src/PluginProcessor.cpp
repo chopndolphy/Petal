@@ -15,6 +15,7 @@ PetalAudioProcessor::PetalAudioProcessor()
 #endif
 {
     params = std::make_unique<Parameters>(*this);
+    presets = std::make_unique<PresetManager>(params->apvts);
 }
 
 
@@ -147,9 +148,7 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
                                   params->reverbDecayTime->getSmooth(),
                                   params->reverbLPF->getSmooth(),
                                   params->reverbHPF->getSmooth(),
-                                  params->reverbSize->getSmooth(),
-                                  params->reverbDuckAmt->getSmooth(),
-                                  params->reverbDuckLen->getSmooth());
+                                  params->reverbSize->getSmooth());
 
     for(int tap = 0; tap < 8; tap++){
         petal.setDelayTapAttributes(tap,
@@ -157,6 +156,7 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
                                     params->tapShiftAmt[tap]->getSmooth(),
                                     params->tapReverbAmt[tap]->getSmooth());
     }
+
     petal.processBlock(buffer);
 }
 
@@ -174,12 +174,25 @@ juce::AudioProcessorEditor* PetalAudioProcessor::createEditor()
 //==============================================================================
 void PetalAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
+    copyXmlToBinary(*params->apvts.copyState().createXml(), destData);
 }
 
 void PetalAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-
+    const auto xmlState = getXmlFromBinary(data, sizeInBytes);
+    if (xmlState == nullptr)
+        return;
+    const auto newTree = juce::ValueTree::fromXml(*xmlState);
+    params->apvts.replaceState(newTree);
 }
+
+/*
+void PetalAudioProcessor::saveEditorState(bool viewState, bool controlState)
+{
+    params->apvts.state.setProperty("viewState", viewState, nullptr);
+    params->apvts.state.setProperty("controlState", controlState, nullptr);
+}
+*/
 
 //==============================================================================
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

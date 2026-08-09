@@ -8,6 +8,7 @@ void PetalProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     dlR.setMaximumDelayInSamples(sampleRate * 10);
     dlL.reset();
     dlR.reset();
+
     duckEnv.reset(sampleRate, 1.0);
 
     rvb.prepareToPlay(sampleRate, samplesPerBlock);
@@ -28,6 +29,8 @@ void PetalProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     for (int tap = 0; tap < 8; tap++) // clean this up maybe
     {
         tp[tap].gain.reset(sampleRate, 0.01f);
+        tp[tap].timeL.reset(sampleRate, 0.15f);
+        tp[tap].timeR.reset(sampleRate, 0.15f);
     }
 }
 
@@ -53,6 +56,10 @@ void PetalProcessor::processBlock(juce::AudioBuffer<float> &buffer) noexcept
             advancePhase(tap);
             float pitchShiftedL = 0.0f, pitchShiftedR = 0.0f;
 
+            // pull one interpolated value per sample, reused across both sub-iterations
+            const float baseTimeL = tp[tap].timeL.getNextValue();
+            const float baseTimeR = tp[tap].timeR.getNextValue();
+
             for (int sub = 0; sub < numOverlaps; sub++) // collapse this loop since theres only 2 overlaps
             {
                 float phase = tp[tap].phase + (float)sub / (float)numOverlaps;
@@ -62,11 +69,11 @@ void PetalProcessor::processBlock(juce::AudioBuffer<float> &buffer) noexcept
                 const float prevPhase = tp[tap].phasePrevSub[sub];
                 if (std::abs(phase - prevPhase) > 0.5f)
                 {
-                    const float endPosL = tp[tap].timeL + windowSizeInSamples * prevPhase + tp[tap].simOffsetL[sub];
-                    const float endPosR = tp[tap].timeR + windowSizeInSamples * prevPhase + tp[tap].simOffsetR[sub];
+                    const float endPosL = baseTimeL + windowSizeInSamples * prevPhase + tp[tap].simOffsetL[sub];
+                    const float endPosR = baseTimeR + windowSizeInSamples * prevPhase + tp[tap].simOffsetR[sub];
 
-                    const float startL = tp[tap].timeL + windowSizeInSamples * phase;
-                    const float startR = tp[tap].timeR + windowSizeInSamples * phase;
+                    const float startL = baseTimeL + windowSizeInSamples * phase;
+                    const float startR = baseTimeR + windowSizeInSamples * phase;
 
                     tp[tap].simOffsetL[sub] = cr.computeSimOffset(dlL, endPosL, startL);
                     tp[tap].simOffsetR[sub] = cr.computeSimOffset(dlR, endPosR, startR);
@@ -76,8 +83,8 @@ void PetalProcessor::processBlock(juce::AudioBuffer<float> &buffer) noexcept
                 // -----------------------------------------------------------
                 float window = 0.5f * (1.0f - std::cos(2.0f * pi * phase));
                 float windowPos = windowSizeInSamples * phase;
-                float delayL = tp[tap].timeL + windowPos + tp[tap].simOffsetL[sub];
-                float delayR = tp[tap].timeR + windowPos + tp[tap].simOffsetR[sub];
+                float delayL = baseTimeL + windowPos + tp[tap].simOffsetL[sub];
+                float delayR = baseTimeR + windowPos + tp[tap].simOffsetR[sub];
 
                 pitchShiftedL += dlL.readSample(delayL) * window * tp[tap].gain.getNextValue();
                 pitchShiftedR += dlR.readSample(delayR) * window * tp[tap].gain.getNextValue();
@@ -142,8 +149,8 @@ void PetalProcessor::setDelayTapTimes(float freeTimeLInMs, float freeTimeRInMs, 
         delayTimesL[tap].store(warpedL);
         delayTimesR[tap].store(warpedR);
 
-        tp[tap].timeL = juce::jlimit(0.0f, maxTapTime, warpedL * timeLInSamples * 8.0f);
-        tp[tap].timeR = juce::jlimit(0.0f, maxTapTime, warpedR * timeRInSamples * 8.0f);
+        tp[tap].timeL.setTargetValue(juce::jlimit(0.0f, maxTapTime, warpedL * timeLInSamples * 8.0f));
+        tp[tap].timeR.setTargetValue(juce::jlimit(0.0f, maxTapTime, warpedR * timeRInSamples * 8.0f));
     }
 }
 

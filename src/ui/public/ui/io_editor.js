@@ -2,6 +2,9 @@ import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/co
 import "./ui/slider.js"
 import "./ui/button.js"
 import "./ui/utility.js"
+import './preset_editor.js'
+import { color } from './drawings.js';
+
 
 import { drawFeedback, drawDial } from './drawings.js';
 
@@ -11,7 +14,7 @@ export class IOEditor extends LitElement {
             box-sizing: border-box;
         }
 
-        p {
+        label {
             margin: 0;
             font-size: 14px;
             font-family: Verdana;
@@ -26,40 +29,60 @@ export class IOEditor extends LitElement {
     render()
     {
         return html`
-        <div style="display: flex; flex-direction: column; justify-content: center; align-items: left; padding: 0px">
-            <div style="display: flex; flex-direction: row; justify-content: center; align-items: left">
-                <p>Input</p>
-                <petal-slider juceID="reverbSize" suffix=" %" style="--numbox-width: 100px; --numbox-font-size: 14px; --numbox-align: center"></petal-slider>
-            </div>
-            <petal-slider juceID="reverbSize" style="--slider-width: 300px; --slider-height: 50px" .drawing=${drawFeedback}></petal-slider>
+        <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%; padding: 20px">
 
-            <div style="display: flex; flex-direction: row; justify-content: center; align-items: left">
-                <p>Feedback</p>
-                <petal-slider juceID="reverbSize" suffix=" %" style="--numbox-width: 100px; --numbox-font-size: 14px; --numbox-align: center"></petal-slider>
-                <p>Size</p>
-                <petal-slider juceID="reverbSize" suffix=" %" style="--numbox-width: 100px; --numbox-font-size: 14px; --numbox-align: center"></petal-slider>
-            </div>
-            <petal-slider juceID="reverbSize" style="--slider-width: 300px; --slider-height: 50px" .drawing=${drawFeedback}></petal-slider>
+                <!-- preset editors -->
+                <preset-editor></preset-editor>
 
-            <div style="display: flex; flex-direction: row; justify-content: center; align-items: left">
-                <p>Delay Level</p>
-                <petal-slider juceID="reverbSize" suffix=" %" style="--numbox-width: 100px; --numbox-font-size: 14px; --numbox-align: center"></petal-slider>
-            </div>
-            <petal-slider juceID="reverbSize" style="--slider-width: 300px; --slider-height: 50px" .drawing=${drawFeedback}></petal-slider>
-
-            <div style="display: flex; flex-direction: row; justify-content: center; align-items: left">
-                <p>Reverb Level</p>
-                <petal-slider juceID="reverbSize" suffix=" %" style="--numbox-width: 100px; --numbox-font-size: 14px; --numbox-align: center"></petal-slider>
-            </div>
-            <petal-slider juceID="reverbSize" style="--slider-width: 300px; --slider-height: 50px" .drawing=${drawFeedback}></petal-slider>
-
-            <div style="display: flex; flex-direction: row; justify-content: center; align-items: left">
-                <p>Dry Level</p>
-                <petal-slider juceID="reverbSize" suffix=" %" style="--numbox-width: 100px; --numbox-font-size: 14px; --numbox-align: center"></petal-slider>
-            </div>
-            <petal-slider juceID="reverbSize" style="--slider-width: 300px; --slider-height: 50px" .drawing=${drawFeedback}></petal-slider>
+                <!-- controls -->
 
 
+                <div>
+                    <petal-slider juceID="inputLevel" style="--slider-width: 100%; --slider-height: 30px" .drawing=${drawFeedback}></petal-slider>
+                    <div style="display: flex; flex-direction: row; justify-content: space-between; margin: 5px">
+                        <label>Input</label>
+                        <petal-slider juceID="inputLevel" suffix=" dB" min="-72" max="6" style=" --numbox-align: right"></petal-slider>
+                    </div>
+                </div>
+
+                <div>
+                    <petal-slider juceID="reverbSize" style="--slider-width: 100%; --slider-height: 30px" .drawing=${drawFeedback}></petal-slider>
+                    <div style="display: flex; flex-direction: row; justify-content: space-between; margin: 5px">
+                        <div style="display: flex; flex-direction: row; justify-content: space-between">
+                        <label>Feedback</label>
+                        <petal-slider juceID="reverbSize" suffix=" %" style=" --numbox-align: right"></petal-slider>
+                        </div>
+
+                        <div style="display: flex; flex-direction: row; justify-content: end">
+                        <label>Size</label>
+                        <petal-slider juceID="feedbackTap" suffix="" style=" --numbox-align: right"></petal-slider>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <petal-slider juceID="delayLevel" style="--slider-width: 100%; --slider-height: 30px" .drawing=${drawFeedback}></petal-slider>
+                    <div style="display: flex; flex-direction: row; justify-content: space-between; margin: 5px">
+                        <label>Delay Level</label>
+                        <petal-slider juceID="delayLevel" suffix=" dB" min="-72" max="6" style=" --numbox-align: right"></petal-slider>
+                    </div>
+                </div>
+
+                <div>
+                    <petal-slider juceID="reverbLevel" style="--slider-width: 100%; --slider-height: 30px" .drawing=${drawFeedback}></petal-slider>
+                    <div style="display: flex; flex-direction: row; justify-content: space-between; margin: 5px">
+                        <label>Reverb Level</label>
+                        <petal-slider juceID="reverbLevel" suffix=" dB" min="-72" max="6" style=" --numbox-align: right"></petal-slider>
+                    </div>
+                </div>
+
+                <div>
+                    <petal-slider juceID="dryLevel" suffix=" dB" min="-72" max="6" style=" --numbox-align: right"></petal-slider>
+                    <div style="display: flex; flex-direction: row; justify-content: space-between; margin: 5px">
+                        <label>Dry Level</label>
+                        <petal-slider juceID="dryLevel" suffix=" %" style=" --numbox-align: right"></petal-slider>
+                    </div>
+                </div>
 
             </div>
         </div>

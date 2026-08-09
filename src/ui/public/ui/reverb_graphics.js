@@ -74,7 +74,7 @@ export class ReverbGraphic extends LitElement {
         this.camera.position.set(r * -0.5, r * -0.5, r * 0.7);
         this.camera.lookAt(0, 0, 0);
 
-        this.geometry = new THREE.PlaneGeometry(3, 1.5, 128, 24);
+        this.geometry = new THREE.PlaneGeometry(3, 1.675, 128, 24);
         this.pos = this.geometry.attributes.position;
         this.srcPos = this.pos.clone();
 
@@ -132,7 +132,6 @@ export class ReverbGraphic extends LitElement {
 
         this.reverbLevel = sReverb.get();
         
-      //  if (this.reverbLevel >= 1) { this.reverbLevel = 0 }
         const lvl = this.reverbLevel * 6 + 1;
         this.displace(2, sReverb.get(), lvl);
         this.renderer.render(this.scene, this.camera);

@@ -2,6 +2,8 @@ import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/co
 import "./ui/slider.js"
 import "./ui/button.js"
 import "./reverb_graphics.js"
+import { color } from './drawings.js';
+import { getSliderState } from '../juce.js';
 import { drawReverbSend, drawReverbSize, drawReverbDecay, drawReverbDampening, drawReverbTone } from './drawings.js';
 
 export class ReverbEditor extends LitElement {
@@ -10,7 +12,7 @@ export class ReverbEditor extends LitElement {
             box-sizing: border-box;
         }
 
-        p {
+        label {
             margin: 0px;
             font-size: 14px;
             font-family: Verdana;
@@ -23,8 +25,37 @@ export class ReverbEditor extends LitElement {
     }
 
     firstUpdated(){
-        const canvas = this.renderRoot.querySelector('#reverbTone');
-        drawReverbTone(canvas);
+        this.reverbLPF = getSliderState("reverbLPF");
+        this.reverbHPF = getSliderState("reverbHPF");
+
+        this.redrawTone = this.redrawTone.bind(this);
+
+        this.canvas = this.renderRoot.querySelector('#reverbTone');
+        this.resizeObserver = new ResizeObserver((entries) => {
+            const { width, height } = entries[0].contentRect;
+            const dpr = window.devicePixelRatio || 1;
+            this.canvas.width = Math.round(width * dpr);
+            this.canvas.height = Math.round(height * dpr);
+            this.redrawTone();
+        });
+        this.resizeObserver.observe(this.canvas);
+
+        this.reverbLPF.valueChangedEvent.addListener(this.redrawTone);
+        this.reverbHPF.valueChangedEvent.addListener(this.redrawTone);
+    }
+
+    disconnectedCallback(){
+        super.disconnectedCallback();
+        this.resizeObserver?.disconnect();
+    }
+
+    redrawTone(){
+        if (this.canvas){
+            drawReverbTone(this.canvas,
+                this.reverbLPF.getNormalisedValue(),
+                this.reverbHPF.getNormalisedValue()
+            );
+        }
     }
 
     render(){
@@ -34,7 +65,7 @@ export class ReverbEditor extends LitElement {
             
             <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 16px">
                 <div style="display: flex; flex-direction: column; align-items: center">
-                    <p>Size</p>
+                    <label>Decay</label>
                     <petal-slider 
                         juceID="reverbDecayTime" 
                         style="--slider-width: 80px; 
@@ -44,14 +75,15 @@ export class ReverbEditor extends LitElement {
 
                     <petal-slider juceID="reverbDecayTime" 
                         suffix=" %" 
-                        style="--numbox-width: 100px; 
+                        style="--numbox-color:  ${ color.lightgrey }; 
+                        --numbox-width: 100px; 
                         --numbox-font-size: 14px; 
                         --numbox-align: center">
                     </petal-slider>
                 </div>
 
                 <div style="display: flex; flex-direction: column; align-items: center">
-                    <p>Decay</p>
+                    <label>Size</label>
                     <petal-slider juceID="reverbSize" 
                         style="--slider-width: 80px; 
                         --slider-height: 74px" 
@@ -60,29 +92,30 @@ export class ReverbEditor extends LitElement {
 
                     <petal-slider juceID="reverbSize" 
                         suffix=" %" 
-                        style="--numbox-width: 100px; 
+                        style="--numbox-color: ${ color.lightgrey }; 
+                        --numbox-width: 100px; 
                         --numbox-font-size: 14px; 
                         --numbox-align: center">
                     </petal-slider>
                 </div>
 
                 <div style="display: flex; flex-direction: column; align-items: center">
-                    <p>Tone</p>
-                    <canvas id="reverbTone" 
-                        style="width: 120px; height: 74px"
-                        onload=${drawReverbTone}>
+                    <label>Tone</label>
+                    <canvas id="reverbTone"
+                        style="width: 120px; height: 74px">
                     </canvas>
                     <div style="display: flex; flex-direction: row; align-items: center">
 
-                    <petal-slider juceID="reverbDampening" 
-                        suffix=" %" 
-                        style="--numbox-width: 75px; 
+                    <petal-slider juceID="reverbLPF" suffix=" Hz" 
+                        style="--numbox-color:  ${ color.lightgrey }; 
+                        --numbox-width: 75px; 
                         --numbox-font-size: 14px; 
                         --numbox-align: right">
                     </petal-slider>
 
-                    <petal-slider juceID="reverbDampening" suffix=" %" 
-                        style="--numbox-width: 75px; 
+                    <petal-slider juceID="reverbHPF" suffix=" Hz"
+                        style="--numbox-color:  ${ color.lightgrey }; 
+                        --numbox-width: 75px; 
                         --numbox-font-size: 14px; 
                         --numbox-align: left">
                     </petal-slider>

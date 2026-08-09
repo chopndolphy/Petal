@@ -47,8 +47,6 @@ apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
     reverbSize = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbSize");
     reverbLPF = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbLPF");
     reverbHPF = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbHPF");
-    reverbDuckAmt = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbDuckAmt");
-    reverbDuckLen = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbDuckLen");
     reverbLevel = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbLevel");
 
     delayDuckAmt = std::make_unique<ParameterInstance>(audioProcessor, *this, "delayDuckAmt");
@@ -177,14 +175,6 @@ Parameters::createParameterLayout()
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"reverbHPF", 1},
                                                            "Reverb HPF",
                                                            juce::NormalisableRange<float>{50.0f, 18000.0f, 0.01, 4.0}, 440.0f));
-
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"reverbDuckAmt", 1},
-                                                           "Reverb Duck Amount",
-                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 0.0f));
-
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"reverbDuckLen", 1},
-                                                           "Reverb Duck Length",
-                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 25.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "reverbLevel", 1},
                                                            "Reverb Level",

@@ -46,8 +46,6 @@ public:
         reverbSize,
         reverbLPF,
         reverbHPF,
-        reverbDuckAmt,
-        reverbDuckLen,
         reverbLevel,
 
         delayDuckAmt,

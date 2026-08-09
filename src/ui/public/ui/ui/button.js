@@ -82,6 +82,13 @@ export class PetalButton extends LitElement {
         if (this.drawing && this.canvas) this.draw();
     }
 
+    toggle() {
+        this.value = !this.value;
+        if (this.juceSlider) {
+            this.juceSlider.setNormalisedValue(this.value ? 1 : 0);
+        } 
+    }
+
     draw() {
         if (!this.canvas || !this.drawing || !this.w || !this.h) return;
 
@@ -92,7 +99,6 @@ export class PetalButton extends LitElement {
         ctx.clearRect(0, 0, this.w, this.h);
         this.drawing(ctx, this.w, this.h, this.value);
     }
-
 
     render() {
         return html`

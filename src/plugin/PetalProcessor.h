@@ -57,17 +57,18 @@ private:
     bool feedbackSuppression = false;
     float feedbackAmt = 0.0f, feedbackL = 0.0f, feedbackR = 0.0f;
     Delayline dlL, dlR;
+
     Correlation cr;
     juce::SmoothedValue<float> duckEnv;
     float duckAmt = 0.0f, duckLen = 0.0f;
+    
 
     struct tapAttributes
     {
         float phase = 0.0f;
         float phaseInv = 0.0f;
         juce::SmoothedValue<float> gain;
-        float timeL = 1.0f;
-        float timeR = 1.0f;
+        juce::SmoothedValue<float> timeL, timeR;
         float shiftAmount = 1.0f;
         float reverbAmount = 0.0f;
 

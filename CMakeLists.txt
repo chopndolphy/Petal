@@ -40,6 +40,8 @@ target_sources(Petal
         src/PluginEditor.h
         src/params/Parameters.cpp
         src/params/Parameters.h
+        src/params/PresetLoader.cpp
+        src/params/PresetLoader.h
         src/plugin/PetalProcessor.cpp
         src/plugin/PetalProcessor.h
         src/dsp/reverb/Reverb.cpp

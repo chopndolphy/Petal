@@ -55,46 +55,15 @@ std::array<std::unique_ptr<juce::WebSliderRelay>, 8> PetalAudioProcessorEditor::
 }
 
 PetalAudioProcessorEditor::PetalAudioProcessorEditor(PetalAudioProcessor &p)
-    : AudioProcessorEditor(&p), audioProcessor(p),
-      webview{[this]
-              {
-                  auto options = juce::WebBrowserComponent::Options{}
-                                     .withBackend(juce::WebBrowserComponent::Options::Backend::webview2)
-                                     .withWinWebView2Options(juce::WebBrowserComponent::Options::WinWebView2{}
-                                                                 .withUserDataFolder(juce::File::getSpecialLocation(juce::File::tempDirectory)))
-                                     .withNativeIntegrationEnabled() // make sure this is present too
-                                     .withOptionsFrom(freeTimeLRelay)
-                                     .withOptionsFrom(freeTimeRRelay)
-                                     .withOptionsFrom(syncTimeLRelay)
-                                     .withOptionsFrom(syncTimeRRelay)
-                                     .withOptionsFrom(isSyncLRelay)
-                                     .withOptionsFrom(isSyncRRelay)
-                                     .withOptionsFrom(stereoLockRelay)
-                                     .withOptionsFrom(positionLRelay)
-                                     .withOptionsFrom(skewLRelay)
-                                     .withOptionsFrom(positionRRelay)
-                                     .withOptionsFrom(skewRRelay)
-                                     .withOptionsFrom(reverbSizeRelay)
-                                     .withOptionsFrom(reverbDecayTimeRelay)
-                                     .withOptionsFrom(reverbLPFRelay)
-                                     .withOptionsFrom(reverbHPFRelay);
-                  for (auto &relay : tapStateRelays)
-                      options = options.withOptionsFrom(*relay);
-                  for (auto &relay : tapShiftAmtRelays)
-                      options = options.withOptionsFrom(*relay);
-                  for (auto &relay : tapReverbAmtRelays)
-                      options = options.withOptionsFrom(*relay);
-
-                  return options.withResourceProvider([this](const auto &url)
-                                                      { return getResource(url); });
-              }()}
-
+    : AudioProcessorEditor(&p), audioProcessor(p)
 {
     addAndMakeVisible(webview);
 
     webview.goToURL("http://localhost:4000");
-    setSize(900, 450);
+    setSize(910, 460);
     startTimerHz(30);
+
+    inputLevelAttachment.sendInitialUpdate();
 
     freeTimeLAttachment.sendInitialUpdate();
     freeTimeRAttachment.sendInitialUpdate();
@@ -107,10 +76,18 @@ PetalAudioProcessorEditor::PetalAudioProcessorEditor(PetalAudioProcessor &p)
     skewLAttachment.sendInitialUpdate();
     positionRAttachment.sendInitialUpdate();
     skewRAttachment.sendInitialUpdate();
+    roundAttachment.sendInitialUpdate();
+
+    windowSizeAttachment.sendInitialUpdate();
+    delayLevelAttachment.sendInitialUpdate();
+
     reverbSizeAttachment.sendInitialUpdate();
     reverbDecayTimeAttachment.sendInitialUpdate();
     reverbLPFAttachment.sendInitialUpdate();
     reverbHPFAttachment.sendInitialUpdate();
+    reverbLevelAttachment.sendInitialUpdate();
+
+    dryLevelAttachment.sendInitialUpdate();
 
     for (int tap = 0; tap < 8; ++tap)
     {
@@ -182,4 +159,5 @@ void PetalAudioProcessorEditor::timerCallback()
     webview.emitEventIfBrowserIsVisible("amplitudesL", juce::JSON::toString(amplitudesL));
     webview.emitEventIfBrowserIsVisible("amplitudesR", juce::JSON::toString(amplitudesR));
     webview.emitEventIfBrowserIsVisible("reverbLevelMsr", juce::JSON::toString(reverbLevelMsr));
+    webview.emitEventIfBrowserIsVisible("tapStates", juce::JSON::toString(tapStates));
 }

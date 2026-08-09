@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { getSliderState } from '../../juce.js';
+import { color } from '../drawings.js';
 
 export class PetalSlider extends LitElement {
     static properties = {
@@ -28,11 +29,11 @@ export class PetalSlider extends LitElement {
             outline: transparent;
             background-color: var(--numbox-bg, transparent);
             text-align: var(--numbox-align, left);
-            color: var(--numbox-color, #6c6c6c);
+            color: var(--numbox-color, #aaaaaa);
             font-family: var(--numbox-font, "Verdana");
             font-size: var(--numbox-font-size, 14px);
-            width: var(--numbox-width, 60px);
-            height: var(--numbox-height, 30px);
+            width: var(--numbox-width, 75px);
+            height: var(--numbox-height, 15px);
             cursor: ns-resize;
         }
         input:focus {
@@ -40,8 +41,8 @@ export class PetalSlider extends LitElement {
         }
         canvas {
             display: block;
-            width: var(--slider-width, 100px);
-            height: var(--slider-height, 100px);
+            width: var(--slider-width, 75px);
+            height: var(--slider-height, 15px);
             cursor: ns-resize;
         }
     `;
@@ -61,6 +62,7 @@ export class PetalSlider extends LitElement {
         this.drawing = null;
         this.drawingAux = null;
         this.norm = 0;
+
 
         this.addEventListener("pointerdown", this.down);
         this.addEventListener("pointermove", this.move);

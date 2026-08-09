@@ -2,7 +2,8 @@ export const color = {
     pink: "#CB8B93", // og pink
     orange: "#E3895A", // og orange
     tan: "#BEDBBA", //"#2d2d2d"
-    grey: "#2d2d2d"
+    grey: "#2d2d2d",
+    lightgrey: "#aaaaaa"
 }
 
 // color helpers
@@ -64,7 +65,7 @@ export function drawTapState(ctx, w, h, val){
     const startAngle = Math.PI * 1.25;
     const endAngle = Math.PI * 1.75;
 
-    ctx.strokeStyle = val == 0 ? 'white' : 'grey';
+    ctx.strokeStyle = val == 1 ? color.lightgrey : color.grey;
     ctx.lineWidth = 1.5;
     ctx.lineCap = "round";
 
@@ -82,6 +83,8 @@ export function drawSelectReverb(ctx, w, h, val) {
     const cx = w/2, cy = h/2, iconSize = w * 0.9;
 
     for(let wave = 0; wave < 4; wave++){
+
+        ctx.beginPath()
         for(let i = 0; i < 48; i++){
             const xPos = w * 0.05 + (w * 0.95/48) * i
             const angle = Math.sin((Math.PI * 2 * (wave + 1) /48) * i)
@@ -91,7 +94,13 @@ export function drawSelectReverb(ctx, w, h, val) {
             if (i === 0) { ctx.moveTo(xPos, yPos) }
             else { ctx.lineTo(xPos, yPos) }
         }
-        ctx.strokeStyle =  `rgba(255, 255, 255, ${ 1/(wave + 1) })`
+
+        const alpha = 0.25 * (4 - wave)
+        const grad = ctx.createLinearGradient(w * 0.05, h / 2, w * 0.95, h / 2)
+        grad.addColorStop(0, withAlpha(color.pink, alpha));
+        grad.addColorStop(1, withAlpha(color.orange, alpha));
+
+        ctx.strokeStyle = grad;
         ctx.lineWidth = 1.5;
         ctx.lineCap = "round"
         ctx.stroke()
@@ -107,9 +116,15 @@ export function drawSelectDelay(ctx, w, h, val) {
         ctx.beginPath();
 
         ctx.arc(cx, cy, radius, Math.PI * 0.75, Math.PI * 0.25, false);
+
+        const grad = ctx.createLinearGradient(w * 0.05, h / 2, w * 0.95, h / 2)
+        grad.addColorStop(0, color.pink);
+        grad.addColorStop(0.5, color.tan);
+        grad.addColorStop(1, color.orange);
+
         ctx.lineWidth = 1.5;
         ctx.lineCap = "round"
-        ctx.strokeStyle = 'white'
+        ctx.strokeStyle = grad;
         ctx.stroke()
 
     }
@@ -127,53 +142,114 @@ function drawInput(){
     ctx.fillRect(0, 0, w, h);
 }
 
+export function drawPitch2(ctx, w, h, value = 0.5, aux = {}) {
+    const { tapIndex = 0, state = true } = aux;
+
+    const norm = Math.min(Math.max(tapIndex / 8, 0), 1);
+    const invValue = 1 - value
+
+    const numDots = 32, windowSize = 12 + 12 * Math.min(Math.abs(value - 0.5) - 0.3, 0)
+    const yScale = Math.min(invValue * 2 - 1, 1);
+
+    ctx.beginPath();
+    for (let i = 0; i < numDots; i++) {
+        const theta = Math.PI * (i / (numDots - 1));
+        const depth = Math.sin(theta);
+        if (depth <= 0) continue;
+
+        const xPos = w / 2 + Math.cos(theta) * w * 0.45;
+        const dist = Math.abs(i - invValue * numDots); 
+        const t = Math.min(dist / (windowSize / 2), 1);
+        const falloff = 0.5 * (1 + Math.cos(Math.PI * t));
+        const yOffset = 1 + (h * 0.5 - 1) * falloff;
+
+        ctx.moveTo(xPos, h / 2 + yOffset * yScale);
+        ctx.lineTo(xPos, h / 2);
+    }
+
+    const baseColor = state ? lerpColor(color.pink, color.orange, norm) : color.grey;
+    const gradCenter = (1 - Math.cos(Math.PI * value)) * 0.5;
+    const grad = ctx.createLinearGradient(w * 0.05, h / 2, w * 0.95, h / 2);
+
+    grad.addColorStop(0, color.grey);
+    grad.addColorStop(Math.max(gradCenter - 0.5, 0), baseColor);
+
+    grad.addColorStop(gradCenter, state ? lerpColor(color.lightgrey, baseColor, 0.5) : lerpColor(color.lightgrey, color.grey, 0.5));
+    grad.addColorStop(Math.min(gradCenter + 0.5, 1), baseColor);
+    grad.addColorStop(1, color.grey);
+
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = grad;
+    ctx.stroke();
+}
+
 export function drawPitch(ctx, w, h, value = 0.5, aux = {}) {
     const { tapIndex = 0, state = true } = aux;
 
     const norm = Math.min(Math.max(tapIndex / 8, 0), 1);
+    const invValue = 0.05 + (1 - value) * 0.9;
+
+    const numDots = 32;
+    const windowSize = 12 + 12 * Math.min(Math.abs(value - 0.5) - 0.3, 0);
+    const yScale = Math.min(invValue * 2 - 1, 1);
+    const peakIndex = invValue * numDots;
+    const halfWindow = windowSize / 2;
+    const RES = 60;
+
+    const ampAt = (i) => {
+        const dist = Math.abs(i - peakIndex);
+        const t = Math.min(dist / halfWindow, 1);
+        const falloff = 0.5 * (1 + Math.cos(Math.PI * t));
+        return 1 + (h * 0.5 - 1) * falloff;
+    };
+    const xThetaAt = (i) => {
+        const theta = Math.PI * (i / (numDots - 1));
+        return { x: w / 2 + Math.cos(theta) * w * 0.45, theta };
+    };
+
     const baseColor = state ? lerpColor(color.pink, color.orange, norm) : color.grey;
-    const dotR = 1.5;
+    const gradCenter = (1 - Math.cos(Math.PI * value)) * 0.5;
+    const grad = ctx.createRadialGradient(w * gradCenter, h / 2, 0, w * gradCenter, h / 2, w / 2);
 
-    ctx.beginPath()    
-    for (let i = 0; i < 24; i++) {
-        const theta = Math.PI * value + (Math.PI * 2 / 24) * i
-        const depth = Math.sin(theta) 
-        if (depth <= 0) continue    
+    grad.addColorStop(0, state ? lerpColor(color.lightgrey, baseColor, 0.5) : lerpColor(color.lightgrey, color.grey, 0.5));
+    grad.addColorStop(0.5, baseColor);
+    grad.addColorStop(1, color.grey);
 
-        const xPos = w / 2 + Math.cos(theta) * w * 0.45
-        ctx.moveTo(xPos - dotR / 2 + 1, h / 2 - dotR / 2) // moveTo before each arc to avoid connecting lines
-        ctx.arc(xPos - dotR / 2, h / 2 - dotR / 2, dotR, 0, Math.PI * 2, false)
+    ctx.beginPath();
+    for (let i = 0; i < numDots; i++) {
+        if (Math.abs(i - peakIndex) <= halfWindow) continue; // handled by the fill below
+        const { x, theta } = xThetaAt(i);
+        if (Math.sin(theta) <= 0) continue;
+        const yOffset = ampAt(i);
+        ctx.moveTo(x, h / 2 + yOffset * yScale);
+        ctx.lineTo(x, h / 2);
     }
-    ctx.fillStyle = state ? 'grey' : color.grey
-    ctx.fill()
-
-    ctx.beginPath()
-    ctx.moveTo(w * 0.05 + w * 0.9 * value, h * 0.25)
-    ctx.lineTo(w * 0.05 + w * 0.9 * value, h * 0.75)
-    ctx.lineWidth = 2
-    ctx.lineCap = "round"
-    ctx.strokeStyle = baseColor
-    ctx.stroke()
-
-    const xPos = w * 0.05 + w * 0.9 * value;
-    const yPos = h * 0.75 + h * 0.5 * -value;
-    ctx.beginPath()
-    ctx.arc(xPos, yPos, 3, 0, Math.PI * 2, false)
-    ctx.fillStyle = baseColor
-    ctx.fill()
-
-    ctx.save();
-    ctx.globalCompositeOperation = "source-atop";
-    const grad = ctx.createRadialGradient(xPos, yPos, 0, xPos, yPos, w * 0.5);
-    grad.addColorStop(0, lerpColor(color.tan, baseColor, 0));
-    grad.addColorStop(1, lerpColor(color.tan, baseColor, 1));
-    ctx.fillStyle = grad;
-    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = "round";
     ctx.strokeStyle = grad;
     ctx.stroke();
-    ctx.restore();
-}
 
+    const winStart = Math.max(peakIndex - halfWindow, 0);
+    const winEnd = Math.min(peakIndex + halfWindow, numDots - 1);
+    const pts = [];
+    for (let s = 0; s <= RES; s++) {
+        const i = winStart + (winEnd - winStart) * (s / RES);
+        const { x, theta } = xThetaAt(i);
+        if (Math.sin(theta) <= 0) continue;
+        pts.push({ x, y: h / 2 + ampAt(i) * yScale });
+    }
+    if (pts.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, h / 2);
+        for (const p of pts) ctx.lineTo(p.x, p.y);
+        ctx.lineTo(pts[pts.length - 1].x, h / 2);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.stroke()
+    }
+}
 
 // reverb send
 export function drawReverbSend(ctx, w, h, val = 0, aux = {}) {
@@ -207,30 +283,44 @@ export function drawReverbSend(ctx, w, h, val = 0, aux = {}) {
             else ctx.lineTo(x, y);
         }
 
+        const grad1 = ctx.createRadialGradient(w * 0.05, h * 0.95, 0, w * 0.05, h * 0.95, w);
+
+        grad1.addColorStop(0, color.lightgrey);
+        grad1.addColorStop(1, 'white');
+
+
         ctx.lineTo(barX, h * 0.95);
         ctx.closePath();
 
-        ctx.fillStyle = baseColor;
+        /*
+        ctx.fillStyle = grad1;
         ctx.fill();
 
-        ctx.strokeStyle = baseColor;
+        ctx.strokeStyle = grad1;
         ctx.lineWidth = 1.5;
         ctx.lineJoin = "round";
         ctx.lineCap = "round";
         ctx.stroke();
+        */
+     //   ctx.save();
+     //   ctx.globalCompositeOperation = "source-atop";
 
-        ctx.save();
-        ctx.globalCompositeOperation = "source-atop";
+        const grad = ctx.createRadialGradient(w * 0.05, 
+            h * 0.95 - h * 0.45 * val, 
+            0, 
+            w * 0.05, 
+            h * 0.95 - h * 0.45 * val, 
+            w * 0.05 + w * 0.9 * val);
 
-        const grad = ctx.createRadialGradient(w * 0.05, h * 0.95, 0, w * 0.05, h * 0.95, w * 0.5);
-        grad.addColorStop(0, lerpColor(color.tan, baseColor, 0));
-        grad.addColorStop(1, lerpColor(color.tan, baseColor, 1));
+        grad.addColorStop(0, lerpColor(state ? color.tan : color.lightgrey, baseColor, state ? 0 : 0.5));
+        grad.addColorStop(0.5 + 0.5 * val, lerpColor(state ? color.tan : color.lightgrey, baseColor, 1));
+        grad.addColorStop(1, color.grey);
 
         ctx.fillStyle = grad;
         ctx.fill();
         ctx.strokeStyle = grad;
         ctx.stroke();
-        ctx.restore();
+    //    ctx.restore();
     }
 }
 
@@ -355,7 +445,13 @@ function drawReverbLevel(ctx, w, h, val = 0){
 
 export function drawReverbTone(canvas, lp = 1, hp = 1) {
     const ctx = canvas.getContext("2d");
-    const w = canvas.width, h = canvas.height;
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.width / dpr, h = canvas.height / dpr;
+
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
     const mid = h * 0.5, top = h * 0.1, bot = h * 0.9;
 
     // gridlines
@@ -376,8 +472,8 @@ export function drawReverbTone(canvas, lp = 1, hp = 1) {
         ctx.quadraticCurveTo(floor, mid, floor, bot);
 
         const c = isHP ? color.pink : color.orange;
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = c;
+        ctx.lineWidth = 1.5;
         ctx.lineCap = 'round'
         ctx.stroke();
 
@@ -396,6 +492,8 @@ export function drawReverbTone(canvas, lp = 1, hp = 1) {
 
     const hpKnee = w * 0.05 + w * 0.7 * hp;
     drawFilterResponse(w * 0.95, hpKnee, hpKnee - kneeW, true);
+
+    ctx.restore();
 }
 
 
@@ -413,26 +511,28 @@ export function drawReverbDecay(ctx, w, h, val = 0, aux = {}) {
 
     // arcs
     for (let i = 0; i < 7; i++) {
-        const clipped = Math.min(val * 7 + 1, 7 - i);
-        const radius = (w * 0.345 / 6) * clipped;
+        const clipped = Math.min(val * 7 + 1, i + 1);
+        const radius = (w * 0.345 / 6) * (8 - clipped);
 
         ctx.beginPath();
-        for (let j = 0; j < 36; j++) {
-            const yPos = h * 0.75 + Math.cos(Math.PI / 2 + (Math.PI / 36) * j) * radius;
-            let xPos = w * 0.05 + ((w * 0.6 / 7) * clipped);
-            xPos += Math.sin(Math.PI / 2 + (Math.PI / 36) * j) * radius / 2;
+        for (let j = 0; j <= 36; j++) {
+            const angle = Math.PI / 2 + Math.PI / 36 * j
+            const yPos = h * 0.75 + Math.cos(angle) * radius;
+            let xPos = w * 0.2 + ((w * 0.6 / 7) * clipped);
+            xPos += Math.sin(angle) * radius / 2;
+    
             if (j === 0) { ctx.moveTo(xPos, yPos); }
             else { ctx.lineTo(xPos, yPos); }
         }
 
         const grad = ctx.createLinearGradient(w * 0.05, h/2, w * 0.95, h/2)
-        grad.addColorStop(0.35, withAlpha(color.pink, 0.5));
-        grad.addColorStop(0.65, color.orange);
+        grad.addColorStop(0, color.tan);
+        grad.addColorStop(0.25, withAlpha(color.orange, 0.75));
+        grad.addColorStop(1, withAlpha(color.pink, 0.25));
         ctx.strokeStyle = grad;
         ctx.lineCap = "round"
         ctx.lineWidth = 1.5
         ctx.stroke()
-
     }
 }
 
@@ -464,23 +564,27 @@ export function drawFeedback(ctx, w, h, val = 0, aux = {}){
 
     const baseColor = color.pink;
     const numLines = 48;
-    const grad = ctx.createLinearGradient(0, h/2, w * val, h/2)
-    grad.addColorStop(0, withAlpha(color.pink, val * 0.8 + 0.2))
-    grad.addColorStop(0.8, withAlpha(color.orange, val * 0.2 + 0.8))
-    grad.addColorStop(1, color.tan)
+    const activeGrad = ctx.createLinearGradient(0, h/2, w * val, h/2)
+    activeGrad.addColorStop(0, withAlpha(color.pink, val * 0.8 + 0.2))
+    activeGrad.addColorStop(0.8, withAlpha(color.orange, val * 0.2 + 0.8))
+    activeGrad.addColorStop(1, color.tan)
+
+    const inactiveGrad = ctx.createLinearGradient(w * val, h / 2, w, h / 2)
+    inactiveGrad.addColorStop(0, withAlpha(color.grey, 0.5))
+    inactiveGrad.addColorStop(1, color.grey)
 
 
     const cy = h/2
     const value = Math.floor(val * numLines);
 
     for (let i = 0; i < numLines; i++){
-        const xPos = w * 0.05 + (w * 0.95 / numLines) * i;
-        const yPos = i > value ? h * 0.15 : h * 0.25;
+        const xPos = w * 0.025 + (w * 0.95 / numLines) * i;
+        const yPos = i > value ? h * 0.35 : h * 0.45;
 
         ctx.beginPath()
         ctx.moveTo(xPos, cy - yPos);
         ctx.lineTo(xPos, cy + yPos);
-        ctx.strokeStyle = i > value ? "grey" : i == value ? color.tan : grad;
+        ctx.strokeStyle = i > value ? inactiveGrad : i == value ? color.tan : activeGrad;
         ctx.lineWidth = i == value ? 2 : 1.5;
         ctx.lineCap = "round";
         ctx.stroke()
@@ -502,12 +606,12 @@ export function drawSelectIO(ctx, w, h, val = 0){
         ctx.moveTo(x.start, y)
         ctx.lineTo(x.end, y);
 
-        ctx.strokeStyle = 'white'
+        ctx.strokeStyle = 'grey'
         ctx.stroke();
 
         const faderSize = w * 0.1;
         ctx.roundRect((x.start + (iconSize / 4) * i), y - faderSize/2, faderSize * 2, faderSize, 4);
-        ctx.fillStyle = 'white'
+        ctx.fillStyle = lerpColor(color.pink, color.orange, 0.25 * i)
         ctx.fill();
     }
 }

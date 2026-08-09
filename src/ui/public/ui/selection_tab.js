@@ -22,7 +22,6 @@ export class SelectionTab extends LitElement {
         }
 
         #tapInstance {
-            height: 70px;
             overflow: hidden;
             transition: height 0.5s
         }
@@ -36,25 +35,27 @@ export class SelectionTab extends LitElement {
 
     render(){
         return html`
-        <div style="display: flex; flex-direction: column; display: space-between">
-            <petal-button
-                @click=${() => this._selectDelay(true)}
-                style="--button-width: 50px;
-                --button-height: 100px"
-                .drawing=${drawSelectDelay}>
-            </petal-button>
+        <div style="display: flex; flex-direction: column; justify-content: space-evenly; height: 100%;">
+            <div style="display: flex; flex-direction: column;">
+                <petal-button
+                    @click=${() => this._selectDelay(true)}
+                    style="--button-width: 50px;
+                    --button-height: 50px"
+                    .drawing=${drawSelectDelay}>
+                </petal-button>
 
-            <petal-button
-                @click=${() => this._selectDelay(false)}
-                style="--button-width: 50px;
-                --button-height: 100px"
-                .drawing=${drawSelectReverb}>
-            </petal-button>
+                <petal-button
+                    @click=${() => this._selectDelay(false)}
+                    style="--button-width: 50px;
+                    --button-height: 50px"
+                    .drawing=${drawSelectReverb}>
+                </petal-button>
+            </div>
 
             <petal-button
                 @click=${() => this._toggleIO()}
                 style="--button-width: 50px;
-                --button-height: 100px"
+                --button-height: 50px"
                 .drawing=${drawSelectIO}>
             </petal-button>
         </div>

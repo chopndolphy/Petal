@@ -36,14 +36,11 @@ void PetalReverb::prepareToPlay(double sampleRate, int samplesPerBlock)
     dlL.prepare(spec);
     dlR.prepare(spec);
 
-    duckingEnv.reset(sampleRate, 1.0);
-
     modAngle1 = 0.015 / sampleRate;
     modAngle2 = 0.01 / sampleRate;
 }
 
-void PetalReverb::setReverbAttributes(float outputLevel, float decayTimeInMs, float LPFreqInHz, float HPFreqInHz, float sizeScaling,
-                                    float duckAmount, float duckLengthInMs)
+void PetalReverb::setReverbAttributes(float outputLevel, float decayTimeInMs, float LPFreqInHz, float HPFreqInHz, float sizeScaling)
 {
     level = outputLevel;
     size = 1.0f + sizeScaling / 25.0f;
@@ -60,10 +57,6 @@ void PetalReverb::setReverbAttributes(float outputLevel, float decayTimeInMs, fl
     float loopLengthR = 251.0f + (13.0f + 19.0f) * size;
     float loopIterations = decayInSamples / ((loopLengthL + loopLengthR) * 0.5f);
     feedBackAmount = std::exp(-6.9077552789821f / loopIterations);
-
-    // ducking (duckAmount, duckLengthInMs arrive as 0-100 and are normalized here)
-    this->duckAmount = duckAmount / 100.0f;
-    duckingEnv.reset(sampleRate, duckLengthInMs / 100.0f);
 }
 
 void PetalReverb::processBlock(juce::AudioBuffer<float> &buffer) noexcept
@@ -111,9 +104,8 @@ void PetalReverb::processBlock(juce::AudioBuffer<float> &buffer) noexcept
             modPhase2 -= 1.0;
 
         // write to outgoing buffer
-        float duck = 1.0 - (duckingEnv.getNextValue() * duckAmount);
-        float outL = highPassL * level * duck;
-        float outR = highPassR * level * duck;
+        float outL = highPassL * level;
+        float outR = highPassR * level;
         buffer.addSample(0, sample, outL);
         buffer.addSample(1, sample, outR);
 

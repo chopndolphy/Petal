@@ -7,8 +7,7 @@ class PetalReverb
 public:
     PetalReverb() {}
     void prepareToPlay(double sampleRate, int samplesPerBlock);
-    void setReverbAttributes(float outputLevel, float decayTimeInMs, float LPFreqInHz, float HPFreqInHz, float sizeScaling, 
-                    float duckAmount, float duckLengthInMs);
+    void setReverbAttributes(float outputLevel, float decayTimeInMs, float LPFreqInHz, float HPFreqInHz, float sizeScaling);
     void processBlock(juce::AudioBuffer<float>& buffer) noexcept;
 
     std::atomic<float> reverbLevelMsr;

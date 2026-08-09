@@ -1,5 +1,4 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
-import './preset_editor.js'
 import './delay_editor.js'
 import './reverb_editor.js'
 import './tap_editor.js'
@@ -18,21 +17,25 @@ class App extends LitElement {
         #divvy {
             width: 850px;
             height: 450px;
-            background-color: #222222;
-            border-radius: 10px;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
+            transform: scale(0.8)
         }
 
-        #fx-stack {
-            width: 450px;
-            height: 450px;
+        #effects {
+            background-color: #222222;
+            border-radius: 10px;
+        }
+
+        #controls {
+            background-color: #222222;
+            border-radius: 10px;
         }
     `
 
     constructor(){
         super()
-        this.isDisplayingDelay = false;
+        this.isDisplayingDelay = true;
         this.isDisplayingIO = true;
         console.log("loaded")
     }
@@ -40,31 +43,35 @@ class App extends LitElement {
     render(){
         return html`
         <main id="divvy">
-            <preset-editor></preset-editor>
-            <div style="display: flex; flex-direction: row; align-items: center; gap: 0px; margin: 0px">
-                <div style="position: relative">
+            <div style="display: flex; flex-direction: row; align-items: center; gap: 10px; margin: 0px">
+                <!-- delay and reverb -->
+                <div id="effects" style="position: relative">
                     <reverb-editor id="reverb" 
-                        style="display: ${this.isDisplayingDelay ? 'none' : 'block'}; height: 450px">
+                        style="display: ${this.isDisplayingDelay ? 'none' : 'block'}; width: 450px; height: 450px">
                     </reverb-editor>
 
                     <delay-editor id="delay" 
-                        style="display: ${this.isDisplayingDelay ? 'block' : 'none'}; height: 450px">
+                        style="display: ${this.isDisplayingDelay ? 'block' : 'none'}; width: 450px; height: 450px">
                     </delay-editor>
                 </div>
                 
-                <tap-editor id="tap" 
-                    style="display: ${this.isDisplayingIO ? 'block' : 'none'}; width: 320px; height: 450px" 
-                    .isPitch=${this.isDisplayingDelay} >
-                </tap-editor>
+                <!-- controls -->
+                <div id="controls" style="position: relative; display: flex; flex-direction: row; width: 450px; height: 450px">
+                    <tap-editor id="tap" 
+                        style="display: ${this.isDisplayingIO ? 'block' : 'none'}; width: 375px" 
+                        .isPitch=${this.isDisplayingDelay} >
+                    </tap-editor>
 
-                <io-editor style="display: ${this.isDisplayingIO ? 'none' : 'block'}; width: 320px; height: 450px"></io-editor>
+                    <io-editor style="display: ${this.isDisplayingIO ? 'none' : 'block'}; width: 375px"></io-editor>
 
-                <selection-tab
-                    .isDisplayingDelay=${this.isDisplayingDelay}
-                    .isDisplayingIO=${this.isDisplayingIO}
-                    @display-delay-change=${e => this.isDisplayingDelay = e.detail}
-                    @display-io-change=${e => this.isDisplayingIO = e.detail}
-                ></selection-tab>
+                    <selection-tab
+                        .isDisplayingDelay=${this.isDisplayingDelay}
+                        .isDisplayingIO=${this.isDisplayingIO}
+                        @display-delay-change=${e => this.isDisplayingDelay = e.detail}
+                        @display-io-change=${e => this.isDisplayingIO = e.detail}
+                        style="width: 75px; height: 450px">
+                    </selection-tab>
+                </div>
             </div>
         </main>
 

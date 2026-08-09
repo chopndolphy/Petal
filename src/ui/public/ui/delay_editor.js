@@ -27,7 +27,7 @@ export class DelayEditor extends LitElement {
             box-sizing: border-box;
         }
 
-        p {
+        label {
             margin: 0;
             font-size: 14px;
             font-family: Verdana;
@@ -35,74 +35,116 @@ export class DelayEditor extends LitElement {
         }
         `
 
-    render()
-    {
+    render() {
         return html`
-        <div style="display: flex; flex-direction: column; justify-content: center; padding: 0px; width: 450px; height: 450px">
+    <div style="padding: 25px; display: flex; flex-direction: column; justify-content: space-between; width: 450px; height: 450px">
 
-            <div style="display: flex; flex-direction: row; justify-content: center">
-                <div style="display: flex; flex-direction: column; align-items: flex-start">
-                    <div style="position: relative; width: 175px; height: 31px;">
-                        <petal-slider juceID="freeTimeL" suffix=" ms" min="5" max="500" style="position: absolute; top: 0; left: 0; display: ${!this.isSyncL ? 'block' : 'none'}; --numbox-width: 175px; --numbox-height: 31px; --numbox-font-size: 30px; --numbox-color: white; --numbox-align: left"></petal-slider>
-                        <petal-slider juceID="syncTimeL" mode="enum" .enumerators=${SYNC_TIME_LABELS} style="position: absolute; top: 0; left: 0; display: ${this.isSyncL ? 'block' : 'none'}; --numbox-width: 175px; --numbox-height: 31px; --numbox-font-size: 30px; --numbox-color: white; --numbox-align: left"></petal-slider>
-                    </div>
-                    <petal-button juceID="isSyncL" onLabel="Sync" offLabel="Free" style="--button-align: left" @change=${e => this.isSyncL = e.detail}></petal-button>
+        <!-- top menu items -->
+        <div style="display: flex; flex-direction: row; justify-content: space-between">
+            <!-- left delay -->
+            <div style="display: flex; flex-direction: column">
+                <div style="height: 30px;">
+                    <petal-slider juceID="freeTimeL"
+                        suffix=" ms"
+                        min="5" max="500"
+                        style="
+                            display: ${!this.isSyncL ? 'block' : 'none'}; 
+                            --numbox-width: 150px; 
+                            --numbox-height: 31px; 
+                            --numbox-font-size: 30px; 
+                            --numbox-color: white; 
+                            --numbox-align: left">
+                    </petal-slider>
+                    <petal-slider juceID="syncTimeL" 
+                        mode="enum" .enumerators=${SYNC_TIME_LABELS} 
+                        style=" 
+                            display: ${this.isSyncL ? 'block' : 'none'}; 
+                            --numbox-width: 150px; 
+                            --numbox-height: 31px; 
+                            --numbox-font-size: 30px; 
+                            --numbox-color: white; 
+                            --numbox-align: left">
+                    </petal-slider>
                 </div>
-
-                <petal-button juceID="stereoLock" style="--button-width: 30px; --button-height: 30px" .drawing=${drawLock}></petal-button>
-
-                <div style="display: flex; flex-direction: column; align-items: flex-end">
-                    <div style="position: relative; width: 175px; height: 31px;">
-                        <petal-slider juceID="freeTimeR" exponent=4 suffix=" ms" min="5" max="500" style="position: absolute; top: 0; left: 0; display: ${!this.isSyncR ? 'block' : 'none'}; --numbox-width: 175px; --numbox-height: 31px; --numbox-font-size: 30px; --numbox-color: white; --numbox-align: right"></petal-slider>
-                        <petal-slider juceID="syncTimeR" mode="enum" .enumerators=${SYNC_TIME_LABELS} style="position: absolute; top: 0; left: 0; display: ${this.isSyncR ? 'block' : 'none'}; --numbox-width: 175px; --numbox-height: 31px; --numbox-font-size: 30px; --numbox-color: white; --numbox-align: right"></petal-slider>
-                    </div>
-                    <petal-button juceID="isSyncR" onLabel="Sync" offLabel="Free" style="--button-align: right" @change=${e => this.isSyncR = e.detail}></petal-button>
-                </div>
+                <petal-button juceID="isSyncL" onLabel="Sync" offLabel="Free" 
+                    style="--button-width: 50px; --button-align: left" 
+                    @change=${e => this.isSyncL = e.detail}>
+                </petal-button>
             </div>
 
-            
-            <div style="display: flex; flex-direction: column; align-items: center">
-                <delay-graphic style="width: 320px; height: 320px"></delay-graphic>
-            </div>
+            <petal-button juceID="stereoLock" style="--button-width: 30px; --button-height: 30px" .drawing=${drawLock}></petal-button>
 
-            <div style="display: flex; flex-direction: row; justify-content: center; justify-content: space-around">
-                    <div style="display: flex; flex-direction: column; align-items: center">
-                        <p>Position</p>
-                        <petal-slider juceID="positionL" suffix=" %" 
-                            style="--numbox-width: 70px; --numbox-height: 15px; --numbox-font-size: 14px; --numbox-color: #909090; --numbox-align: center">
-                        </petal-slider>
-                    </div>
-
-                    <div style="display: flex; flex-direction: column; align-items: center">
-                        <p>Skew</p>
-                        <petal-slider juceID="skewL" suffix=" %" 
-                            style="--numbox-width: 70px; --numbox-height: 15px; --numbox-font-size: 14px; --numbox-color: #909090; --numbox-align: center">
-                        </petal-slider>
-                    </div>
-
-                    <div style="display: flex; flex-direction: column; align-items: center">
-                        <p>Round</p>
-                        <petal-slider juceID="skewR" suffix=" %" 
-                            style="--numbox-width: 70px; --numbox-height: 15px; --numbox-font-size: 14px; --numbox-color: #909090; --numbox-align: center">
-                        </petal-slider>
-                    </div>
-
-                    <div style="display: flex; flex-direction: column; align-items: center">
-                            <p>Skew</p>
-                            <petal-slider juceID="skewR" suffix=" %" 
-                                style="--numbox-width: 70px; --numbox-height: 15px; --numbox-font-size: 14px; --numbox-color: #909090; --numbox-align: center">
-                            </petal-slider>
-                    </div>
-
-                    <div style="display: flex; flex-direction: column; align-items: center">
-                            <p>Position</p>
-                            <petal-slider juceID="positionR" suffix=" %" 
-                            style="--numbox-width: 70px; --numbox-height: 15px; --numbox-font-size: 14px; --numbox-color: #909090; --numbox-align: center"></petal-slider>
-                    </div>
+            <!-- right delay -->
+            <div style="display: flex; flex-direction: column; align-items: flex-end">
+                <div style=" height: 30px;">
+                    <petal-slider juceID="freeTimeR"
+                        suffix=" ms"
+                        min="5" max="500"
+                        style=" display: ${!this.isSyncR ? 'block' : 'none'}; 
+                            --numbox-width: 150px; 
+                            --numbox-height: 31px; 
+                            --numbox-font-size: 30px; 
+                            --numbox-color: white; 
+                            --numbox-align: right;
+                            --text-align: right">
+                    </petal-slider>
+                    <petal-slider juceID="syncTimeR" 
+                        mode="enum" .enumerators=${SYNC_TIME_LABELS} 
+                        style=" display: ${this.isSyncR ? 'block' : 'none'}; 
+                            --numbox-width: 150px; 
+                            --numbox-height: 31px; 
+                            --numbox-font-size: 30px; 
+                            --numbox-color: white; 
+                            --numbox-align: right;
+                            --text-align: right">
+                    </petal-slider>
                 </div>
+                <petal-button juceID="isSyncR" onLabel="Sync" offLabel="Free" 
+                    style="--button-width: 50px; --button-align: right" 
+                    @change=${e => this.isSyncR = e.detail}>
+                </petal-button>
             </div>
         </div>
-        `
+
+        <!-- visualizer -->
+        <div style="display: flex; flex-direction: column; align-items: center">
+            <delay-graphic style="width: 300px; height: 300px"></delay-graphic>
+        </div>
+
+        <!-- bottom controls -->
+        <div style="display: flex; flex-direction: row; justify-content: space-around">
+            <div style="display: flex; flex-direction: column; align-items: center">
+                <label>Position</label>
+                <petal-slider juceID="positionL" suffix=" %" 
+                    style="--numbox-align: center"></petal-slider>
+            </div>
+
+            <div style="display: flex; flex-direction: column; align-items: center">
+                <label>Skew</label>
+                <petal-slider juceID="skewL" min="-100" max="100" suffix=" %" 
+                    style="--numbox-align: center"></petal-slider>
+            </div>
+
+            <div style="display: flex; flex-direction: column; align-items: center">
+                <label>Round</label>
+                <petal-slider juceID="round" suffix=" %" 
+                    style="--numbox-align: center"></petal-slider>
+            </div>
+
+            <div style="display: flex; flex-direction: column; align-items: center">
+                <label>Skew</label>
+                <petal-slider juceID="skewR" min="-100" max="100" suffix=" %" 
+                    style="--numbox-align: center"></petal-slider>
+            </div>
+
+            <div style="display: flex; flex-direction: column; align-items: center">
+                <label>Position</label>
+                <petal-slider juceID="positionR" suffix=" %" 
+                    style="--numbox-align: center"></petal-slider>
+            </div>
+        </div>
+    </div>
+    `
     }
 };
 

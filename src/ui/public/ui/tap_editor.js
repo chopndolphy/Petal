@@ -50,70 +50,62 @@ export class TapEditorInstance extends LitElement {
         super.disconnectedCallback();
     }
 
-    render(){
+    render() {
         return html`
-        <div id="tapInstance" style="display: flex; flex-direction: row">
-            <petal-button id="leftSide" juceID="tapState${this.tapIndex}" 
-                style="display: ${this.isLeftColm ? "block" : "none"}; 
-                --button-width: 25px; 
-                --button-height: 50px; 
-                margin-right: 5px" 
-                .drawing=${drawTapState}>
-            </petal-button>
-            
-            <p id="leftSide" style="display: ${!this.isLeftColm ? "block" : "none"}">${this.tapIndex + 1}</p>
-            <div style="position: relative; width: 100px; height: 70px;">
-                <div style="position: absolute; top: 0; left: 0; display: flex; flex-direction: column; visibility: ${this.isPitch ? 'visible' : 'hidden'}">
-                    <petal-slider juceID="tapShiftAmt${this.tapIndex}" 
-                        style="--slider-width: 100px; 
-                        --slider-height: 50px; 
-                        margin-bottom: 5px;" 
-                        .drawing=${drawPitch}
-                        .drawingAux=${ { tapIndex: this.tapIndex, state: this.isState }}>
-                    </petal-slider>
+    <div id="tapInstance" style="display: flex; flex-direction: row; justify-content: space-between;">
+        <petal-button id="leftSide" juceID="tapState${this.tapIndex}" 
+            style="display: ${this.isLeftColm ? "block" : "none"}; 
+                    --button-width: 25px; 
+                    --button-height: 50px" 
+            .drawing=${drawTapState}>
+        </petal-button>
+        <p id="leftSide" style="display: ${!this.isLeftColm ? "block" : "none"}">${this.tapIndex + 1}</p>
+        <div style="display: flex; flex-direction: column; justify-content: space-between">
 
-                    <petal-slider juceID="tapShiftAmt${this.tapIndex}" 
+            <div style="display: ${!this.isPitch ? 'none' : 'flex'}; flex-direction: column">
+                <petal-slider juceID="tapShiftAmt${this.tapIndex}" 
+                    style="--slider-width: 100px; 
+                            --slider-height: 50px; 
+                            margin-bottom: 5px;" 
+                    .drawing=${drawPitch}
+                    .drawingAux=${{ tapIndex: this.tapIndex, state: this.isState }}>
+                </petal-slider>
+
+                <petal-slider juceID="tapShiftAmt${this.tapIndex}" 
                     suffix=" st" 
                     min="-12" 
                     max="12" 
-                    style="--numbox-width: 100px; 
-                    --numbox-height: 15px;
-                    --numbox-font-size: 14px; 
-                    --numbox-align: center">
-                    </petal-slider>
-                </div>
-
-                <div style="position: absolute; top: 0; left: 0; display: flex; flex-direction: column; visibility: ${!this.isPitch ? 'visible' : 'hidden'}">
-                    <petal-slider juceID="tapReverbAmt${this.tapIndex}"
-                        style="--slider-width: 100px;
-                        --slider-height: 50px;
-                        margin-bottom: 5px;"
-                        .drawing=${drawReverbSend}
-                        .drawingAux=${ { tapIndex: this.tapIndex, state: this.isState }}>
-                    </petal-slider>
-
-                    <petal-slider juceID="tapReverbAmt${this.tapIndex}" 
-                        suffix=" %" 
-                        style="--numbox-width: 100px; 
-                        --numbox-height: 15px; 
-                        --numbox-font-size: 14px; 
-                        --numbox-align: center">
-                    </petal-slider>
-
-                </div>
+                    style="--numbox-align: center; --text-align: center">
+                </petal-slider>
             </div>
-            <p id="leftSide" style="display: ${this.isLeftColm ? "block" : "none"}">${this.tapIndex + 1}</p>
 
-            <petal-button id="leftSide" 
-                juceID="tapState${this.tapIndex}" 
-                style="display: ${!this.isLeftColm ? "block" : "none"}; 
-                --button-width: 25px; 
-                --button-height: 50px; 
-                margin-right: 5px" 
-                .drawing=${drawTapState}>
-            </petal-button>
+            <div style="display: ${!this.isPitch ? 'flex' : 'none'}; flex-direction: column">
+                <petal-slider juceID="tapReverbAmt${this.tapIndex}"
+                    style="--slider-width: 100px;
+                            --slider-height: 50px;
+                            margin-bottom: 5px;"
+                    .drawing=${drawReverbSend}
+                    .drawingAux=${{ tapIndex: this.tapIndex, state: this.isState }}>
+                </petal-slider>
+
+                <petal-slider juceID="tapReverbAmt${this.tapIndex}" 
+                    suffix=" %" 
+                    style="--numbox-align: center; --text-align: center">
+                </petal-slider>
+
+            </div>
         </div>
-        `
+        <p id="leftSide" style="display: ${this.isLeftColm ? "block" : "none"}">${this.tapIndex + 1}</p>
+
+        <petal-button id="leftSide" 
+            juceID="tapState${this.tapIndex}" 
+            style="display: ${!this.isLeftColm ? "block" : "none"}; 
+                    --button-width: 25px; 
+                    --button-height: 50px" 
+            .drawing=${drawTapState}>
+        </petal-button>
+    </div>
+    `
     }
 }
 
@@ -141,56 +133,55 @@ export class TapEditor extends LitElement {
     }
 
     render() {
-        const instances = []            
-        
+        const instances = []
+
         return html`
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: space-between;">
-                <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between">
-                    <p>Ducking</p>
-                    <petal-slider juceID="reverbDecayTime" 
-                        suffix=" %" 
-                        style="--numbox-width: 100px; 
-                        --numbox-font-size: 14px; 
-                        --numbox-align: left">
-                    </petal-slider>
+    <div style="display: flex; flex-direction: column; justify-content: space-evenly; height: 100%; width: 85%; margin: auto">
+        <!-- top controls -->
+        <div style="display: flex; flex-direction: column; justify-content: space-between; height: 10%">
+            <div style="display: flex; flex-direction: row; justify-content: space-between">
+                <p>Ducking</p>
+                <petal-slider juceID="reverbDecayTime" 
+                    suffix=" %" 
+                    style="--numbox-align: right; --text-align: right">
+                </petal-slider>
 
-                    <p>Release</p>
-                    <petal-slider juceID="reverbDecayTime" 
-                        suffix=" %" 
-                        style="--numbox-width: 100px; 
-                        --numbox-font-size: 14px; 
-                        --numbox-align: left">
-                    </petal-slider>
-                </div>
-
-                <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between">
-                    <p>Window Size</p>
-                    <petal-slider juceID="windowSize" 
-                        suffix=" ms" 
-                        style="--numbox-width: 100px; 
-                        --numbox-font-size: 14px; 
-                        --numbox-align: left">
-                    </petal-slider>
-                </div>
-
-                <div style="display: flex; flex-direction: row; justify-content: space-between; gap: 25px">
-                    
-                    <div style="display: flex; flex-direction: column; gap: 25px">
-                        <tap-instance .isPitch=${this.isPitch} tapIndex=0></tap-instance>
-                        <tap-instance .isPitch=${this.isPitch} tapIndex=2></tap-instance>
-                        <tap-instance .isPitch=${this.isPitch} tapIndex=4></tap-instance>
-                        <tap-instance .isPitch=${this.isPitch} tapIndex=6></tap-instance>
-                    </div>
-
-                    <div style="display: flex; flex-direction: column; gap: 25px">
-                        <tap-instance .isLeftColm=${false} .isPitch=${this.isPitch} tapIndex=1></tap-instance>
-                        <tap-instance .isLeftColm=${false} .isPitch=${this.isPitch} tapIndex=3></tap-instance>
-                        <tap-instance .isLeftColm=${false} .isPitch=${this.isPitch} tapIndex=5></tap-instance>
-                        <tap-instance .isLeftColm=${false} .isPitch=${this.isPitch} tapIndex=7></tap-instance>
-                    </div>
-                </div>
+                <p>Release</p>
+                <petal-slider juceID="reverbDecayTime" 
+                    suffix=" %" 
+                    style="--numbox-align: right; --text-align: right">
+                </petal-slider>
             </div>
-        `
+
+            <div style="display: flex; flex-direction: row; justify-content: space-between">
+                <p>Window Size</p>
+                <petal-slider juceID="windowSize" 
+                    min="5" max="200" suffix=" ms" 
+                    style="--numbox-width: 100px; 
+                    --numbox-font-size: 14px; 
+                    --numbox-align: right">
+                </petal-slider>
+            </div>
+        </div>
+
+        <!-- tap instances -->
+        <div style="display: flex; flex-direction: row; justify-content: space-between; height: 75%">
+            <div style="display: flex; flex-direction: column; justify-content: space-between;">
+                <tap-instance .isPitch=${this.isPitch} tapIndex=0></tap-instance>
+                <tap-instance .isPitch=${this.isPitch} tapIndex=2></tap-instance>
+                <tap-instance .isPitch=${this.isPitch} tapIndex=4></tap-instance>
+                <tap-instance .isPitch=${this.isPitch} tapIndex=6></tap-instance>
+            </div>
+
+            <div style="display: flex; flex-direction: column; justify-content: space-between">
+                <tap-instance .isLeftColm=${false} .isPitch=${this.isPitch} tapIndex=1></tap-instance>
+                <tap-instance .isLeftColm=${false} .isPitch=${this.isPitch} tapIndex=3></tap-instance>
+                <tap-instance .isLeftColm=${false} .isPitch=${this.isPitch} tapIndex=5></tap-instance>
+                <tap-instance .isLeftColm=${false} .isPitch=${this.isPitch} tapIndex=7></tap-instance>
+            </div>
+        </div>
+    </div>
+    `
     }
 }
 

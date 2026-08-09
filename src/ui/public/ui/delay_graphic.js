@@ -4,7 +4,7 @@ import { getSliderState } from '../juce.js';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-import { delayTimesL, delayTimesR } from '../event_listener.js';
+import { delayTimesL, delayTimesR, tapStates } from '../event_listener.js';
 import { Smoothening } from './ui/utility.js';
 import { color, lerpColor } from './drawings.js';
 
@@ -35,7 +35,7 @@ export class DelayGraphic extends LitElement {
             left: 0;
         }
     `
-
+    
     constructor() {
         super();
         this.width = 0;
@@ -44,7 +44,7 @@ export class DelayGraphic extends LitElement {
 
     firstUpdated() {
         this.container = this.renderRoot.querySelector("#canvas-container");
-        
+
         const resizeObserver = new ResizeObserver((entries) => {
             const { width, height } = entries[0].contentRect;
             if (width > 0 && height > 0) {
@@ -75,37 +75,67 @@ export class DelayGraphic extends LitElement {
         this.container.appendChild(this.renderer.domElement);
 
         const r = 4;
-        this.sx = new Smoothening(0.025, 0);
-        this.sy = new Smoothening(0.025, 0);
-        this.sz = new Smoothening(0.025, r);
+        this.sx = new Smoothening(0.05, 0);
+        this.sy = new Smoothening(0.05, 0);
+        this.sz = new Smoothening(0.05, r);
         this.camera.position.set(0, 0, r);
         this.camera.lookAt(0, 0, 0);
         this.renderer.render(this.scene, this.camera);
 
+        this.sOpacity = new Smoothening(0.025, 0);
+
         // pointer handlers
         this.mouseState = 'idle';
+        this.lastClickXPos = null;
         this.lastClickYPos = null;
 
+        // running normalized pad state per side, since sliders are write-only
+        // from here (no synchronous read-back), additive dragging needs a
+        // local value to accumulate onto
+        this.padValues = {
+            dragL: { pos: 0.5, skew: 0.5 },
+            dragR: { pos: 0.5, skew: 0.5 }
+        };
+
+        this.padSensitivity = 1.0; // tune: >1 = more sensitive, <1 = more precise
+
         this.onMouseDown = (e) => {
-            this.mouseState = 'drag';
+            const rect = this.container.getBoundingClientRect();
+            const isLeft = (e.clientX - rect.left) < this.width / 2;
+            this.mouseState = isLeft ? 'dragL' : 'dragR';
+            this.lastClickXPos = e.clientX;
             this.lastClickYPos = e.clientY;
-        }
+        };
 
         this.onMouseMove = (e) => {
-            const rect = this.container.getBoundingClientRect();
-            const isLeft = (e.clientX - rect.left) < this.width / 2 ? -1 : 1;
-            const r = 4;
-            this.sx.set(isLeft * r * 0.5);
-            this.sy.set(-r * 0.5);
-            this.sz.set(-r * -0.7);
+            if (this.mouseState === 'idle'){
+                const rect = this.container.getBoundingClientRect();
+                const isLeft = (e.clientX - rect.left) < this.width / 2;
+                const r = 4;
+                this.sx.set(isLeft ? -1 : 1 * r * 0.5);
+                this.sy.set(-r * 0.5);
+                this.sz.set(-r * -0.7);
+            }
 
-            if (this.mouseState == 'drag' && isLeft === -1){
-                this.positionLSlider.setNormalisedValue(0);
-                this.skewLSlider.setNormalisedValue(0);
+            if (this.mouseState === 'dragL' || this.mouseState === 'dragR') {
+                const deltaX = (e.clientX - this.lastClickXPos) / this.width;
+                const deltaY = (e.clientY - this.lastClickYPos) / this.height;
 
-            } else if (this.mouseState == 'drag' && isLeft === 1){
-                this.positionRSlider.setNormalisedValue(1);
-                this.skewRSlider.setNormalisedValue(1);
+                const state = this.padValues[this.mouseState];
+                state.pos = Math.max(0, Math.min(1, state.pos + deltaX * this.padSensitivity));
+                state.skew = Math.max(0, Math.min(1, state.skew - deltaY * this.padSensitivity)); // up = increase
+
+                if (this.mouseState === 'dragL') {
+                    this.positionLSlider.setNormalisedValue(state.pos);
+                    this.skewLSlider.setNormalisedValue(state.skew);
+                } else {
+                    this.positionRSlider.setNormalisedValue(state.pos);
+                    this.skewRSlider.setNormalisedValue(state.skew);
+                }
+
+                // roll reference point forward so next move is relative to this one
+                this.lastClickXPos = e.clientX;
+                this.lastClickYPos = e.clientY;
             }
         };
 
@@ -118,7 +148,7 @@ export class DelayGraphic extends LitElement {
 
         this.onMouseUp = (e) => {
             this.mouseState = 'idle';
-        }
+        };
 
         this.renderer.domElement.addEventListener("mousedown", this.onMouseDown);
         this.renderer.domElement.addEventListener("mousemove", this.onMouseMove);
@@ -127,23 +157,21 @@ export class DelayGraphic extends LitElement {
         this.animate();
     }
 
-    #arcPositions(xOffset, radius, startAngle, endAngle) {
+    #arcPositions(xOffset, radius, startAngle, endAngle, segmentCount) {
         const curve = new THREE.ArcCurve(xOffset, 0, radius, startAngle, endAngle);
         const positions = [];
-        for (const p of curve.getPoints(64)) {
+        for (const p of curve.getPoints(segmentCount)) {
             positions.push(p.x, p.y, 0);
         }
         return positions;
     }
 
-    
     sampleGradientColors(steps, direction = false, tap = 0.5, isActive = true) {
         const canvas = document.createElement('canvas');
         canvas.width = steps;
         canvas.height = 1;
         const ctx = canvas.getContext('2d');
         const grad = ctx.createLinearGradient(0, 0, steps, 0);
-
 
         let a = "#CB8B93" // og pink
         let b = "#E3895A" // og orange
@@ -161,37 +189,42 @@ export class DelayGraphic extends LitElement {
         const srgbToLinear = (c) =>
             c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
 
-            for (let i = 0; i < steps; i++) {
-                const r = srgbToLinear(imgData[i * 4] / 255);
-                const g = srgbToLinear(imgData[i * 4 + 1] / 255);
-                const b = srgbToLinear(imgData[i * 4 + 2] / 255);
-                colors.push(r, g, b);
-            }
-            return colors;
+        for (let i = 0; i < steps; i++) {
+            const r = srgbToLinear(imgData[i * 4] / 255);
+            const g = srgbToLinear(imgData[i * 4 + 1] / 255);
+            const b = srgbToLinear(imgData[i * 4 + 2] / 255);
+            colors.push(r, g, b);
+        }
+        return colors;
     }
-    
+
     createArcs() {
         for (let channel = 0; channel < 2; channel++) {
             const startAngle = channel === 0 ? Math.PI * 0.75 : Math.PI * 1.5;
             const endAngle = startAngle + Math.PI * 0.75;
             const xOffset = channel === 0 ? -0.03125 : 0.03125;
 
-
-
             for (let tap = 0; tap < 8; tap++) {
                 const radius = channel === 0 ? delayTimesL[tap] : delayTimesR[tap];
+
+                // fix segment count based on max possible radius, not live radius,
+                // so vertex count never changes frame-to-frame
+                const maxRadius = 4; // TODO: set to your actual max delay-time radius
+                const arcLength = maxRadius * (endAngle - startAngle);
+                const segmentCount = Math.max(64, Math.round(arcLength * 48));
+
                 const geometry = new LineGeometry();
-                const positions = this.#arcPositions(xOffset, radius, startAngle, endAngle);
+                const positions = this.#arcPositions(xOffset, radius, startAngle, endAngle, segmentCount);
 
                 geometry.setPositions(positions);
-                const segments = positions.length / 3; // one RGB triple needed per vertex
+                const vertexCount = positions.length / 3; // one RGB triple needed per vertex
 
-                geometry.setColors(this.sampleGradientColors(segments, channel === 0, 0.125 * tap));
-
+                geometry.setColors(this.sampleGradientColors(vertexCount, channel === 0, 0.125 * tap));
 
                 const c = lerpColor(color.pink, color.orange, 0.125 * tap);
-                const material = new LineMaterial({ linewidth: 3, 
-                    vertexColors: true, 
+                const material = new LineMaterial({
+                    linewidth: 3,
+                    vertexColors: true,
                     transparent: true,
                 });
                 material.resolution.set(this.width, this.height);
@@ -203,16 +236,29 @@ export class DelayGraphic extends LitElement {
                 z = Math.cos(z * Math.PI / 2);
                 arc.position.z = z;
 
-                this.arcs.push({ mesh: arc, channel, tap, xOffset, startAngle, endAngle });
+                this.arcs.push({
+                    mesh: arc,
+                    channel,
+                    tap,
+                    xOffset,
+                    startAngle,
+                    endAngle,
+                    segmentCount,
+                    opacitySmooth: new Smoothening(0.05, tapStates[tap] === 1 ? 1 : 0)
+                });
                 this.scene.add(arc);
             }
         }
     }
 
     updateArcs() {
-        for (const { mesh, channel, tap, xOffset, startAngle, endAngle } of this.arcs) {
+        for (const { mesh, channel, tap, xOffset, startAngle, endAngle, segmentCount, opacitySmooth } of this.arcs) {
             const radius = channel === 0 ? delayTimesL[tap] : delayTimesR[tap];
-            mesh.geometry.setPositions(this.#arcPositions(xOffset, radius, startAngle, endAngle));
+            mesh.geometry.setPositions(this.#arcPositions(xOffset, radius, startAngle, endAngle, segmentCount));
+
+            opacitySmooth.set(tapStates[tap] === 1 ? 1 : 0);
+            mesh.material.opacity = opacitySmooth.get();
+            mesh.visible = mesh.material.opacity > 0.001;
         }
     }
 
@@ -230,8 +276,10 @@ export class DelayGraphic extends LitElement {
     disconnectedCallback() {
         super.disconnectedCallback();
         cancelAnimationFrame(this.raf);
+        this.renderer?.domElement.removeEventListener("mousedown", this.onMouseDown);
         this.renderer?.domElement.removeEventListener("mousemove", this.onMouseMove);
         this.renderer?.domElement.removeEventListener("mouseleave", this.onMouseLeave);
+        this.renderer?.domElement.removeEventListener("mouseup", this.onMouseUp);
         for (const { mesh } of this.arcs) {
             mesh.geometry.dispose();
             mesh.material.dispose();

@@ -23,6 +23,8 @@ private:
     PetalAudioProcessor& audioProcessor;
 
     juce::WebSliderRelay
+        inputLevelRelay{"inputLevel"},
+
         freeTimeLRelay{"freeTimeL"},
         freeTimeRRelay{"freeTimeR"},
         syncTimeLRelay{"syncTimeL"},
@@ -34,11 +36,18 @@ private:
         skewLRelay{"skewL"},
         positionRRelay{"positionR"},
         skewRRelay{"skewR"},
+        roundRelay{"round"},
+
+        delayLevelRelay{"delayLevel"},
+        windowSizeRelay{"windowSize"},
+
         reverbSizeRelay{"reverbSize"},
         reverbDecayTimeRelay{"reverbDecayTime"},
         reverbLPFRelay{"reverbLPF"},
-        reverbHPFRelay{"reverbHPF"};
-    ;
+        reverbHPFRelay{"reverbHPF"},
+        reverbLevelRelay{"reverbLevel"},
+
+        dryLevelRelay{"dryLevel"};
 
     static std::array<std::unique_ptr<juce::WebSliderRelay>, 8> makeTapRelays (const juce::String& idPrefix);
     std::array<std::unique_ptr<juce::WebSliderRelay>, 8> tapStateRelays = makeTapRelays("tapState");
@@ -49,6 +58,7 @@ private:
         [this]
         {
             auto options = juce::WebBrowserComponent::Options{}
+                               .withOptionsFrom(inputLevelRelay)
                                .withOptionsFrom(freeTimeLRelay)
                                .withOptionsFrom(freeTimeRRelay)
                                .withOptionsFrom(syncTimeLRelay)
@@ -60,10 +70,15 @@ private:
                                .withOptionsFrom(skewLRelay)
                                .withOptionsFrom(positionRRelay)
                                .withOptionsFrom(skewRRelay)
+                               .withOptionsFrom(roundRelay)
+                               .withOptionsFrom(delayLevelRelay)
+                               .withOptionsFrom(windowSizeRelay)
                                .withOptionsFrom(reverbSizeRelay)
                                .withOptionsFrom(reverbDecayTimeRelay)
                                .withOptionsFrom(reverbLPFRelay)
-                               .withOptionsFrom(reverbHPFRelay);
+                               .withOptionsFrom(reverbHPFRelay)
+                               .withOptionsFrom(reverbLevelRelay)
+                               .withOptionsFrom(dryLevelRelay);
 
             for (auto &relay : tapStateRelays)
                 options = options.withOptionsFrom(*relay);
@@ -72,9 +87,28 @@ private:
             for (auto& relay : tapReverbAmtRelays)
                 options = options.withOptionsFrom(*relay);
 
-            return options.withResourceProvider ([this] (const auto& url) { return getResource (url); });
+            options = options.withNativeFunction("attemptSave", [this](auto &var, auto completion)
+            {
+                juce::MessageManager::callAsync([this] { audioProcessor.presets->attemptSave(); });
+                completion(juce::var()); 
+            });
+
+            options = options.withNativeFunction("getAllPreset", [this](auto &var, auto completion)
+            {
+                completion(audioProcessor.presets->getAllPresetAsVar()); 
+            });
+
+            options = options.withNativeFunction("loadPreset", [this](auto &var, auto completion)
+            {
+                audioProcessor.presets->loadPreset(var[0].toString());
+                completion(juce::var());
+            });
+
+            return options.withResourceProvider([this](const auto &url)
+                                                { return getResource(url); });
         }()};
 
+    WebSliderParameterAttachment inputLevelAttachment { *audioProcessor.params->inputLevel->getRangedAudioParameter(), inputLevelRelay, nullptr };
     WebSliderParameterAttachment freeTimeLAttachment { *audioProcessor.params->freeTimeL->getRangedAudioParameter(), freeTimeLRelay, nullptr };
     WebSliderParameterAttachment freeTimeRAttachment  { *audioProcessor.params->freeTimeR->getRangedAudioParameter(),  freeTimeRRelay,  nullptr };
     WebSliderParameterAttachment syncTimeLAttachment { *audioProcessor.params->syncTimeL->getRangedAudioParameter(), syncTimeLRelay, nullptr };
@@ -86,16 +120,21 @@ private:
     WebSliderParameterAttachment skewLAttachment { *audioProcessor.params->skewL->getRangedAudioParameter(), skewLRelay, nullptr };
     WebSliderParameterAttachment positionRAttachment { *audioProcessor.params->positionR->getRangedAudioParameter(), positionRRelay, nullptr };
     WebSliderParameterAttachment skewRAttachment { *audioProcessor.params->skewR->getRangedAudioParameter(), skewRRelay, nullptr };
+    WebSliderParameterAttachment roundAttachment { *audioProcessor.params->round->getRangedAudioParameter(), roundRelay, nullptr };
+    WebSliderParameterAttachment windowSizeAttachment { *audioProcessor.params->windowSize->getRangedAudioParameter(), windowSizeRelay, nullptr };
+    WebSliderParameterAttachment delayLevelAttachment{*audioProcessor.params->delayLevel->getRangedAudioParameter(), delayLevelRelay, nullptr};
+
     WebSliderParameterAttachment reverbSizeAttachment { *audioProcessor.params->reverbSize->getRangedAudioParameter(), reverbSizeRelay, nullptr };
     WebSliderParameterAttachment reverbDecayTimeAttachment { *audioProcessor.params->reverbDecayTime->getRangedAudioParameter(), reverbDecayTimeRelay, nullptr };
     WebSliderParameterAttachment reverbLPFAttachment{*audioProcessor.params->reverbLPF->getRangedAudioParameter(), reverbLPFRelay, nullptr};
-    WebSliderParameterAttachment reverbHPFAttachment{*audioProcessor.params->reverbHPF->getRangedAudioParameter(), reverbLPFRelay, nullptr};
+    WebSliderParameterAttachment reverbHPFAttachment{*audioProcessor.params->reverbHPF->getRangedAudioParameter(), reverbHPFRelay, nullptr};
+    WebSliderParameterAttachment reverbLevelAttachment{*audioProcessor.params->reverbLevel->getRangedAudioParameter(), reverbLevelRelay, nullptr};
+    WebSliderParameterAttachment dryLevelAttachment{*audioProcessor.params->dryLevel->getRangedAudioParameter(), dryLevelRelay, nullptr};
 
     std::array<std::unique_ptr<WebSliderParameterAttachment>, 8> tapStateAttachments, tapShiftAmtAttachments, tapReverbAmtAttachments;
 
     auto getResource(const juce::String& url) -> std::optional<juce::WebBrowserComponent::Resource>;
     void timerCallback() override;
 
-    int testVal = 0;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PetalAudioProcessorEditor)
 };
