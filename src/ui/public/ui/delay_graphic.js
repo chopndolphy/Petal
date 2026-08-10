@@ -89,9 +89,6 @@ export class DelayGraphic extends LitElement {
         this.lastClickXPos = null;
         this.lastClickYPos = null;
 
-        // running normalized pad state per side, since sliders are write-only
-        // from here (no synchronous read-back), additive dragging needs a
-        // local value to accumulate onto
         this.padValues = {
             dragL: { pos: 0.5, skew: 0.5 },
             dragR: { pos: 0.5, skew: 0.5 }
@@ -112,7 +109,7 @@ export class DelayGraphic extends LitElement {
                 const rect = this.container.getBoundingClientRect();
                 const isLeft = (e.clientX - rect.left) < this.width / 2;
                 const r = 4;
-                this.sx.set(isLeft ? -1 : 1 * r * 0.5);
+                this.sx.set((isLeft ? -1 : 1) * r * 0.5);
                 this.sy.set(-r * 0.5);
                 this.sz.set(-r * -0.7);
             }
@@ -176,7 +173,7 @@ export class DelayGraphic extends LitElement {
         let a = "#CB8B93" // og pink
         let b = "#E3895A" // og orange
         let c = "#BEDBBA"//"#2d2d2d"
-        grad.addColorStop(0, !direction ? b : a);
+        grad.addColorStop(0, !direction ? b : b);
         grad.addColorStop(!direction ? 0.3 : 0.7, direction ? c : a);
         grad.addColorStop(1, !direction ? b : b);
 

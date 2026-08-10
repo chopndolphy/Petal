@@ -77,7 +77,7 @@ export class IOEditor extends LitElement {
                 </div>
 
                 <div>
-                    <petal-slider juceID="dryLevel" suffix=" dB" min="-72" max="6" style=" --numbox-align: right"></petal-slider>
+                    <petal-slider juceID="reverbSize" style="--slider-width: 100%; --slider-height: 30px" .drawing=${drawFeedback}></petal-slider>
                     <div style="display: flex; flex-direction: row; justify-content: space-between; margin: 5px">
                         <label>Dry Level</label>
                         <petal-slider juceID="dryLevel" suffix=" %" style=" --numbox-align: right"></petal-slider>

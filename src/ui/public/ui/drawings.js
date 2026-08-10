@@ -80,32 +80,36 @@ export function drawTapState(ctx, w, h, val){
 }
 
 export function drawSelectReverb(ctx, w, h, val) {
-    const cx = w/2, cy = h/2, iconSize = w * 0.9;
+    const cy = h/2, iconSize = w * 0.9;
 
-    for(let wave = 0; wave < 4; wave++){
-
+    const drawFreq = (freq, opacity) => {
         ctx.beginPath()
-        for(let i = 0; i < 48; i++){
-            const xPos = w * 0.05 + (w * 0.95/48) * i
-            const angle = Math.sin((Math.PI * 2 * (wave + 1) /48) * i)
-            const amp = w * 0.0625 * (4 - wave)
-            const yPos = cy + (wave - 2) + angle * amp;
+        ctx.moveTo(w * 0.05, h * 0.95);
+        
+        for(let i = 0; i <= 48; i++){
+            const xPos = w * 0.05 + (w * 0.9/48) * i;
+            const amp = (h * 0.25/freq)
+            const yPos = cy + Math.sin((Math.PI * freq / 48) * i) * amp;
 
-            if (i === 0) { ctx.moveTo(xPos, yPos) }
-            else { ctx.lineTo(xPos, yPos) }
+            ctx.lineTo(xPos, yPos)
         }
+        ctx.lineTo(w * 0.95, h * 0.95);
+        ctx.closePath()
 
-        const alpha = 0.25 * (4 - wave)
         const grad = ctx.createLinearGradient(w * 0.05, h / 2, w * 0.95, h / 2)
-        grad.addColorStop(0, withAlpha(color.pink, alpha));
-        grad.addColorStop(1, withAlpha(color.orange, alpha));
+        grad.addColorStop(0, withAlpha(color.pink, opacity));
+        grad.addColorStop(1, withAlpha(color.orange, opacity));
 
-        ctx.strokeStyle = grad;
+        ctx.fillStyle = grad;
         ctx.lineWidth = 1.5;
         ctx.lineCap = "round"
-        ctx.stroke()
+        ctx.lineJoin = "round"
+        ctx.fill()
     }
-    
+
+    drawFreq(6, 1)
+    drawFreq(4, 0.875)
+    drawFreq(2, 0.75)
 }
 
 export function drawSelectDelay(ctx, w, h, val) {
@@ -292,19 +296,6 @@ export function drawReverbSend(ctx, w, h, val = 0, aux = {}) {
         ctx.lineTo(barX, h * 0.95);
         ctx.closePath();
 
-        /*
-        ctx.fillStyle = grad1;
-        ctx.fill();
-
-        ctx.strokeStyle = grad1;
-        ctx.lineWidth = 1.5;
-        ctx.lineJoin = "round";
-        ctx.lineCap = "round";
-        ctx.stroke();
-        */
-     //   ctx.save();
-     //   ctx.globalCompositeOperation = "source-atop";
-
         const grad = ctx.createRadialGradient(w * 0.05, 
             h * 0.95 - h * 0.45 * val, 
             0, 
@@ -313,19 +304,15 @@ export function drawReverbSend(ctx, w, h, val = 0, aux = {}) {
             w * 0.05 + w * 0.9 * val);
 
         grad.addColorStop(0, lerpColor(state ? color.tan : color.lightgrey, baseColor, state ? 0 : 0.5));
-        grad.addColorStop(0.5 + 0.5 * val, lerpColor(state ? color.tan : color.lightgrey, baseColor, 1));
+        grad.addColorStop(0.15 + 0.25 * val, lerpColor(state ? color.tan : color.lightgrey, baseColor, 1));
         grad.addColorStop(1, color.grey);
 
         ctx.fillStyle = grad;
         ctx.fill();
         ctx.strokeStyle = grad;
         ctx.stroke();
-    //    ctx.restore();
     }
 }
-
-
-// 
 
 export function drawSkew(ctx, w, h, val = 0, aux = {}){
     const radius = w * 0.45 * (val * 0.75 + 0.25);
@@ -606,7 +593,9 @@ export function drawSelectIO(ctx, w, h, val = 0){
         ctx.moveTo(x.start, y)
         ctx.lineTo(x.end, y);
 
-        ctx.strokeStyle = 'grey'
+        ctx.strokeStyle = color.lightgrey;
+        ctx.lineCap = "round"
+        ctx.lineWidth = 1.5
         ctx.stroke();
 
         const faderSize = w * 0.1;

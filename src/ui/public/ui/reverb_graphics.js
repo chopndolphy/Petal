@@ -70,11 +70,17 @@ export class ReverbGraphic extends LitElement {
         this.scene = new THREE.Scene();
 
         const r = 4;
-        this.camera = new THREE.OrthographicCamera(-2, 2, 3, -2); 
+        this.camera = new THREE.OrthographicCamera(-2, 2, 2.5, -2.5); 
         this.camera.position.set(r * -0.5, r * -0.5, r * 0.7);
         this.camera.lookAt(0, 0, 0);
 
-        this.geometry = new THREE.PlaneGeometry(3, 1.675, 128, 24);
+        const grid = this.makeGridLines(3, 1.5, 15, 10);
+        grid.rotation.x = Math.PI / 2
+        grid.position.set(0, -0.35, 0)
+        this.scene.add(grid);
+
+
+        this.geometry = new THREE.PlaneGeometry(3, 1.5, 128, 24);
         this.pos = this.geometry.attributes.position;
         this.srcPos = this.pos.clone();
 
@@ -96,6 +102,33 @@ export class ReverbGraphic extends LitElement {
         this.container.appendChild(this.renderer.domElement);
 
         this.animate();
+    }
+
+    makeGridLines(width, height, widthSegments, heightSegments){
+        const positions = [];
+        const halfW = width / 2;
+        const halfH = height / 2;
+        const stepX = width / widthSegments;
+        const stepY = height / heightSegments;
+
+        for (let i = 0; i <= widthSegments; i++) {
+            const x = -halfW + i * stepX;
+            positions.push(x, -halfH, 0, x, halfH, 0);
+        }
+        for (let j = 0; j <= heightSegments; j++) {
+            const y = -halfH + j * stepY;
+            positions.push(-halfW, y, 0, halfW, y, 0);
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        return new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ 
+            color: color.lightgrey,
+            depthWrite: false,
+            transparent: true,
+            opacity: 0.35,
+
+         }));
     }
 
     displace(amount = 4, falloff = 0, dampen = 1) {

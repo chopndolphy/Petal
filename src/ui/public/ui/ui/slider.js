@@ -24,6 +24,12 @@ export class PetalSlider extends LitElement {
     };
 
     static styles = css`
+        :host {
+            display: flex;
+            justify-content: var(--numbox-align, flex-start);
+            width: var(--slider-width, auto);
+        }
+
         input {
             border: transparent;
             outline: transparent;
@@ -308,6 +314,8 @@ export class PetalSlider extends LitElement {
                 return this.formatTime(value); // value is in ms
             case "percent":
                 return `${value.toFixed(0)}%`;
+            case "int":
+                return `${ Math.floor(value) + this.suffix }`;
             default:
                 return value.toFixed(1) + this.suffix;
         }

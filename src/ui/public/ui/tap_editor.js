@@ -1,9 +1,10 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
-import { drawButton } from './drawings.js';
+import { drawButton, lerpColor } from './drawings.js';
 import { getSliderState } from '../juce.js';
 import "./ui/slider.js"
 import "./ui/button.js"
 import { drawReverbSend, drawPitch, drawTapState, drawSelectDelay, drawSelectReverb } from './drawings.js';
+import { color } from './drawings.js';
 
 export class TapEditorInstance extends LitElement {
     static properties = {
@@ -72,10 +73,9 @@ export class TapEditorInstance extends LitElement {
                 </petal-slider>
 
                 <petal-slider juceID="tapShiftAmt${this.tapIndex}" 
-                    suffix=" st" 
-                    min="-12" 
-                    max="12" 
-                    style="--numbox-align: center; --text-align: center">
+                    suffix=" st" min="-12" max="12" mode="int"
+                    style="--numbox-align: center; --text-align: center;
+                    --color: ${lerpColor(color.pink, color.orange, 0.125 * this.tapIndex)};">
                 </petal-slider>
             </div>
 
@@ -90,7 +90,8 @@ export class TapEditorInstance extends LitElement {
 
                 <petal-slider juceID="tapReverbAmt${this.tapIndex}" 
                     suffix=" %" 
-                    style="--numbox-align: center; --text-align: center">
+                    style="--numbox-align: center; --text-align: center;
+                    --color: ${lerpColor(color.pink, color.orange, 0.125 * this.tapIndex)};">
                 </petal-slider>
 
             </div>
@@ -167,14 +168,14 @@ export class TapEditor extends LitElement {
         <!-- tap instances -->
         <div style="display: flex; flex-direction: row; justify-content: space-between; height: 75%">
             <div style="display: flex; flex-direction: column; justify-content: space-between;">
-                <tap-instance .isPitch=${this.isPitch} tapIndex=0></tap-instance>
+                <tap-instance style="width: 150px" .isPitch=${this.isPitch} tapIndex=0></tap-instance>
                 <tap-instance .isPitch=${this.isPitch} tapIndex=2></tap-instance>
                 <tap-instance .isPitch=${this.isPitch} tapIndex=4></tap-instance>
                 <tap-instance .isPitch=${this.isPitch} tapIndex=6></tap-instance>
             </div>
 
             <div style="display: flex; flex-direction: column; justify-content: space-between">
-                <tap-instance .isLeftColm=${false} .isPitch=${this.isPitch} tapIndex=1></tap-instance>
+                <tap-instance style="width: 150px" .isLeftColm=${false} .isPitch=${this.isPitch} tapIndex=1></tap-instance>
                 <tap-instance .isLeftColm=${false} .isPitch=${this.isPitch} tapIndex=3></tap-instance>
                 <tap-instance .isLeftColm=${false} .isPitch=${this.isPitch} tapIndex=5></tap-instance>
                 <tap-instance .isLeftColm=${false} .isPitch=${this.isPitch} tapIndex=7></tap-instance>

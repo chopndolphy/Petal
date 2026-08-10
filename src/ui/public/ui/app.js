@@ -19,7 +19,8 @@ class App extends LitElement {
             height: 450px;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
-            transform: scale(0.8)
+            transform-origin: top left;
+            transform: scale(0.75); 
         }
 
         #effects {

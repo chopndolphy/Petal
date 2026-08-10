@@ -14,13 +14,15 @@ const SYNC_TIME_LABELS = [
 export class DelayEditor extends LitElement {
     static properties = {
         isSyncL: { type: Boolean },
-        isSyncR: { type: Boolean }
+        isSyncR: { type: Boolean },
+        isStereoLock: { type: Boolean }
     }
 
     constructor() {
         super();
         this.isSyncL = true;
         this.isSyncR = true;
+        this.isStereoLock = false;
     }
     static styles = css`
         *, *::before, *::after {
@@ -77,7 +79,7 @@ export class DelayEditor extends LitElement {
             <!-- right delay -->
             <div style="display: flex; flex-direction: column; align-items: flex-end">
                 <div style=" height: 30px;">
-                    <petal-slider juceID="freeTimeR"
+                    <petal-slider juceID="${this.isStereoLock ? "freeTimeL" : "freeTimeR"}"
                         suffix=" ms"
                         min="5" max="500"
                         style=" display: ${!this.isSyncR ? 'block' : 'none'}; 
@@ -88,7 +90,7 @@ export class DelayEditor extends LitElement {
                             --numbox-align: right;
                             --text-align: right">
                     </petal-slider>
-                    <petal-slider juceID="syncTimeR" 
+                    <petal-slider juceID="${this.isStereoLock ? "syncTimeL" : "syncTimeR"}" 
                         mode="enum" .enumerators=${SYNC_TIME_LABELS} 
                         style=" display: ${this.isSyncR ? 'block' : 'none'}; 
                             --numbox-width: 150px; 
@@ -133,13 +135,13 @@ export class DelayEditor extends LitElement {
 
             <div style="display: flex; flex-direction: column; align-items: center">
                 <label>Skew</label>
-                <petal-slider juceID="skewR" min="-100" max="100" suffix=" %" 
+                <petal-slider juceID="${this.isStereoLock ? "skewL" : "skewR"}" min="-100" max="100" suffix=" %" 
                     style="--numbox-align: center"></petal-slider>
             </div>
 
             <div style="display: flex; flex-direction: column; align-items: center">
                 <label>Position</label>
-                <petal-slider juceID="positionR" suffix=" %" 
+                <petal-slider juceID="${this.isStereoLock ? "positionL" : "positionR"}" suffix=" %" 
                     style="--numbox-align: center"></petal-slider>
             </div>
         </div>
