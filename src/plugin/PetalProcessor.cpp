@@ -32,6 +32,9 @@ void PetalProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
         tp[tap].timeL.reset(sampleRate, 0.15f);
         tp[tap].timeR.reset(sampleRate, 0.15f);
     }
+
+    filterL.prepareToPlay(sampleRate);
+    filterR.prepareToPlay(sampleRate);
 }
 
 void PetalProcessor::processBlock(juce::AudioBuffer<float> &buffer) noexcept
@@ -45,11 +48,30 @@ void PetalProcessor::processBlock(juce::AudioBuffer<float> &buffer) noexcept
 
     for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
     {
-        float inL = readDataL[sample] + feedbackL, inR = readDataR[sample] + feedbackR;
+        // input signals
+        float dryL = readDataL[sample];
+        float dryR = readDataR[sample];
+
+        float inL = dryL * inputGain;
+        float inR = dryR * inputGain;
+        inL = filterL.processSample(inL, filterShape);
+        inR = filterR.processSample(inR, filterShape);
+
         dlL.writeSample(inL);
         dlR.writeSample(inR);
-        duckEnv.setTargetValue((inL + inR)/2);
+
+        // replace the passed-through dry signal with the gain-staged version
+        buffer.setSample(0, sample, dryL * dryGain);
+        buffer.setSample(1, sample, dryR * dryGain);
+
+        // set ducking env follower
+        duckEnv.setTargetValue(std::abs((inL + inR)/2));
         float duck = 1.0f - (duckEnv.getNextValue() * duckAmt);
+        
+        // set mod LFO
+        modLFOPhase += modLFOAngle;
+        if (modLFOPhase >= 1.0f) modLFOPhase -= 1.0f;
+        const float modLFOValue = std::sin(2.0f * pi * modLFOPhase) * modLFODepthInSamples;
 
         for (int tap = 0; tap < 8; tap++)
         {
@@ -83,20 +105,20 @@ void PetalProcessor::processBlock(juce::AudioBuffer<float> &buffer) noexcept
                 // -----------------------------------------------------------
                 float window = 0.5f * (1.0f - std::cos(2.0f * pi * phase));
                 float windowPos = windowSizeInSamples * phase;
-                float delayL = baseTimeL + windowPos + tp[tap].simOffsetL[sub];
-                float delayR = baseTimeR + windowPos + tp[tap].simOffsetR[sub];
+                float delayL = std::max(0.0f, baseTimeL + windowPos + tp[tap].simOffsetL[sub] + modLFOValue);
+                float delayR = std::max(0.0f, baseTimeR + windowPos + tp[tap].simOffsetR[sub] + modLFOValue);
 
                 pitchShiftedL += dlL.readSample(delayL) * window * tp[tap].gain.getNextValue();
                 pitchShiftedR += dlR.readSample(delayR) * window * tp[tap].gain.getNextValue();
             }
 
-        //   feedbackL = pitchShiftedL * feedbackAmt;
-        //   feedbackR = pitchShiftedR * feedbackAmt;
+            //   feedbackL = pitchShiftedL * feedbackAmt;
+            //   feedbackR = pitchShiftedR * feedbackAmt;
 
             pitchShiftedL *= duck;
             pitchShiftedR *= duck;
-            buffer.addSample(0, sample, pitchShiftedL * gain);
-            buffer.addSample(1, sample, pitchShiftedR * gain);
+            buffer.addSample(0, sample, pitchShiftedL * gain * delayGain);
+            buffer.addSample(1, sample, pitchShiftedR * gain * delayGain);
             rvbBuffer.addSample(0, sample, pitchShiftedL * gain * tp[tap].reverbAmount);
             rvbBuffer.addSample(1, sample, pitchShiftedR * gain * tp[tap].reverbAmount);
         }
@@ -173,13 +195,30 @@ void PetalProcessor::setDelayTapAttributes(int tap, bool state, int shiftAmountI
     tp[tap].reverbAmount = reverbAmount;
 }
 
-void PetalProcessor::setDelayAndPitchAttributes(float feedbackAmt, int feedbackLen, int windowSizeInMilliseconds, 
-    float setDuckingAmount, float duckTimeInMs)
+void PetalProcessor::setCharacterAttributes(float inputLevelInDB, float delayLevelInDB, float dryLevelInDB, float feedbackAmt, int feedbackLen, int windowSizeInMilliseconds,
+                                            float lfoRateInHz, float lfoAmount,
+                                            float filterFreqInHz, float filterRes, float filterShape,
+                                            float setDuckingAmount, float duckTimeInMs)
 {
+    inputGain = juce::Decibels::decibelsToGain(inputLevelInDB, -72.0f);
+    delayGain = juce::Decibels::decibelsToGain(delayLevelInDB, -72.0f);
+    dryGain = juce::Decibels::decibelsToGain(dryLevelInDB, -72.0f);
+
     this->windowSizeInMilliseconds = windowSizeInMilliseconds;
     this->windowSizeInSamples = (sampleRate / 1000.0f) * windowSizeInMilliseconds;
 
-    // ducking (setDuckingAmount, duckTimeInMs arrive as 0-100 and are normalized here)
+    // mod LFO
+    this->modLFOAngle = lfoRateInHz/sampleRate;
+    this->modLFODepthInSamples = (lfoAmount / 100.0f) * (maxModLFODepthInMs / 1000.0f) * (float)sampleRate;
+
+    // filtering
+    float resonance = std::clamp(filterRes / 100.0f, 0.0f, 0.985f);
+    float cutoffFreq = std::clamp(filterFreqInHz, 20.0f, (float)sampleRate * 0.485f);
+    this->filterL.setCoefficients(cutoffFreq, resonance);
+    this->filterR.setCoefficients(cutoffFreq, resonance);
+    this->filterShape = filterShape/100.0f;
+
+    // ducking
     this->duckAmt = setDuckingAmount / 100.0f;
     this->duckLen = duckTimeInMs / 100.0f;
     duckEnv.reset(sampleRate, duckLen);

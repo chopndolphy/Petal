@@ -4,6 +4,7 @@
 #include "../dsp/Utility.h"
 #include "../dsp/Delayline.h"
 #include "../dsp/reverb/Reverb.h"
+#include "../dsp/reverb/Filters.h"
 
 class PetalProcessor
 {
@@ -19,10 +20,13 @@ public:
                  bool isSyncL, bool isSyncR, bool stereoLock);
 
     void setBPM(juce::AudioPlayHead *playhead);
-    void setDelayAndPitchAttributes(float feedbackAmt, int feedbackLen, int windowSizeInMilliseconds,
-                                                    float setDuckingAmount, float setDuckingTime);
+    void setCharacterAttributes(float inputLevelInDB, float delayLevelInDB, float dryLevelInDB, float feedbackAmt, int feedbackLen, int windowSizeInMilliseconds,
+                                float lfoRateInHz, float lfoAmount,
+                                float filterFreqInHz, float filterRes, float filterShape,
+                                float setDuckingAmount, float duckTimeInMs);
 
-    std::array<std::atomic<float>, 8> amplitudesL, amplitudesR, delayTimesL, delayTimesR, tapStates;
+        std::array<std::atomic<float>, 8> amplitudesL,
+        amplitudesR, delayTimesL, delayTimesR, tapStates;
     PetalReverb rvb;
     juce::AudioBuffer<float> rvbBuffer;
 
@@ -64,6 +68,8 @@ private:
     float windowSizeInSamples = (float)(sampleRate / 2), windowSizeInMilliseconds = 200.0;
     static constexpr int numOverlaps = 2;
 
+    float inputGain = 1.0f, delayGain = 1.0, dryGain = 1.0f;
+
     bool feedbackSuppression = false;
     float feedbackAmt = 0.0f, feedbackL = 0.0f, feedbackR = 0.0f;
     Delayline dlL, dlR;
@@ -72,6 +78,10 @@ private:
     juce::SmoothedValue<float> duckEnv;
     float duckAmt = 0.0f, duckLen = 0.0f;
     
+    float filterShape = 0.0f;
+    SVF filterL, filterR;
+    float modLFOPhase = 0.0f, modLFOAngle = 0.0f, modLFODepthInSamples = 0.0f;
+    static constexpr float maxModLFODepthInMs = 8.0f;
 
     struct tapAttributes
     {

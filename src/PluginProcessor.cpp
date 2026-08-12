@@ -140,9 +140,22 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
                            params->isSyncR->getSmooth(),
                            params->stereoLock->getSmooth());
 
-    petal.setDelayAndPitchAttributes(0, 0, params->windowSize->getSmooth(),
-                                     params->delayDuckAmt->getSmooth(),
-                                     params->delayDuckLen->getSmooth());
+    petal.setCharacterAttributes(params->inputLevel->getSmooth(),
+                                 params->delayLevel->getSmooth(),
+                                 params->dryLevel->getSmooth(),
+
+                                     0,
+                                 0, params->windowSize->getSmooth(),
+
+                                 params->lfoRate->getSmooth(),   // lfo rate
+                                 params->lfoAmount->getSmooth(), // lfo amount
+
+                                 params->filterCutoff->getSmooth(), // filter cutoff
+                                 params->filterQ->getSmooth(),      // filter q
+                                 params->filterShape->getSmooth(),  // filter shape
+
+                                 params->delayDuckAmt->getSmooth(),
+                                 params->delayDuckLen->getSmooth());
 
     petal.rvb.setReverbAttributes(params->reverbLevel->getSmooth(),
                                   params->reverbDecayTime->getSmooth(),

@@ -41,6 +41,11 @@ apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
     // window
     windowSize = std::make_unique<ParameterInstance>(audioProcessor, *this, "windowSize");
     windowJitter = std::make_unique<ParameterInstance>(audioProcessor, *this, "windowJitter");
+    lfoRate = std::make_unique<ParameterInstance>(audioProcessor, *this, "lfoRate");
+    lfoAmount = std::make_unique<ParameterInstance>(audioProcessor, *this, "lfoAmount");
+    filterCutoff = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterCutoff");
+    filterQ = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterQ");
+    filterShape = std::make_unique<ParameterInstance>(audioProcessor, *this, "filterShape");
 
     // reverb
     reverbDecayTime = std::make_unique<ParameterInstance>(audioProcessor, *this, "reverbDecayTime");
@@ -62,7 +67,7 @@ Parameters::createParameterLayout()
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"inputLevel", 1},
                                                            "Input Level",
-                                                           juce::NormalisableRange<float>{0.0f, 1.0f, 0.01}, 1.0f));
+                                                           juce::NormalisableRange<float>{-72.0f, 6.0f, 0.01, 0.25}, 0.0f));
 
     for(int tap = 0; tap < 8; tap++)
     {
@@ -152,7 +157,7 @@ Parameters::createParameterLayout()
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"delayLevel", 1},
                                                            "Delay Level",
-                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 25.0f));
+                                                           juce::NormalisableRange<float>{-72.0f, 6.0f, 0.01, 0.25}, 0.0f));
 
     // window size
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"windowSize", 1},
@@ -189,9 +194,31 @@ Parameters::createParameterLayout()
                                                            "Delay Duck Length",
                                                            juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 25.0f));
 
+    // filter freq
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"filterCutoff", 1},
+                                                           "Filter Cutoff",
+                                                           juce::NormalisableRange<float>{50.0f, 18000.0f, 0.01}, 12000.0f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"filterQ", 1},
+                                                           "Filter Resonance",
+                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 25.0f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"filterShape", 1},
+                                                           "Filter Shape",
+                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 0.0f));
+
+    // lfo
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"lfoRate", 1},
+                                                           "Mod LFO Rate",
+                                                           juce::NormalisableRange<float>{0.0f, 20.0f, 0.01}, 0.0f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"lfoAmount", 1},
+                                                           "Mod LFO Amount",
+                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 0.0f));
+
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"dryLevel", 1},
                                                            "Dry Level",
-                                                           juce::NormalisableRange<float>{0.0f, 1.0f, 0.01}, 1.0f));
+                                                           juce::NormalisableRange<float>{-72.0f, 6.0f, 0.01, 0.25}, 0.0f));
 
     return layout;
 }

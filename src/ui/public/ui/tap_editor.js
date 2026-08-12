@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { drawButton, lerpColor } from './drawings.js';
 import { getSliderState } from '../juce.js';
-import "./ui/slider.js"
+import "./ui/pictSlider.js"
 import "./ui/button.js"
 import { drawReverbSend, drawPitch, drawTapState, drawSelectDelay, drawSelectReverb } from './drawings.js';
 import { color } from './drawings.js';
@@ -64,35 +64,35 @@ export class TapEditorInstance extends LitElement {
         <div style="display: flex; flex-direction: column; justify-content: space-between">
 
             <div style="display: ${!this.isPitch ? 'none' : 'flex'}; flex-direction: column">
-                <petal-slider juceID="tapShiftAmt${this.tapIndex}" 
-                    style="--slider-width: 100px; 
-                            --slider-height: 50px; 
-                            margin-bottom: 5px;" 
+                <petal-pict-slider juceID="tapShiftAmt${this.tapIndex}"
+                    style="--slider-width: 100px;
+                            --slider-height: 50px;
+                            margin-bottom: 5px;"
                     .drawing=${drawPitch}
                     .drawingAux=${{ tapIndex: this.tapIndex, state: this.isState }}>
-                </petal-slider>
+                </petal-pict-slider>
 
-                <petal-slider juceID="tapShiftAmt${this.tapIndex}" 
+                <petal-num-slider juceID="tapShiftAmt${this.tapIndex}"
                     suffix=" st" min="-12" max="12" mode="int"
                     style="--numbox-align: center; --text-align: center;
                     --color: ${lerpColor(color.pink, color.orange, 0.125 * this.tapIndex)};">
-                </petal-slider>
+                </petal-num-slider>
             </div>
 
             <div style="display: ${!this.isPitch ? 'flex' : 'none'}; flex-direction: column">
-                <petal-slider juceID="tapReverbAmt${this.tapIndex}"
+                <petal-pict-slider juceID="tapReverbAmt${this.tapIndex}"
                     style="--slider-width: 100px;
                             --slider-height: 50px;
                             margin-bottom: 5px;"
                     .drawing=${drawReverbSend}
                     .drawingAux=${{ tapIndex: this.tapIndex, state: this.isState }}>
-                </petal-slider>
+                </petal-pict-slider>
 
-                <petal-slider juceID="tapReverbAmt${this.tapIndex}" 
-                    suffix=" %" 
+                <petal-num-slider juceID="tapReverbAmt${this.tapIndex}"
+                    suffix=" %"
                     style="--numbox-align: center; --text-align: center;
                     --color: ${lerpColor(color.pink, color.orange, 0.125 * this.tapIndex)};">
-                </petal-slider>
+                </petal-num-slider>
 
             </div>
         </div>
@@ -141,27 +141,13 @@ export class TapEditor extends LitElement {
         <!-- top controls -->
         <div style="display: flex; flex-direction: column; justify-content: space-between; height: 10%">
             <div style="display: flex; flex-direction: row; justify-content: space-between">
-                <p>Ducking</p>
-                <petal-slider juceID="reverbDecayTime" 
-                    suffix=" %" 
-                    style="--numbox-align: right; --text-align: right">
-                </petal-slider>
-
-                <p>Release</p>
-                <petal-slider juceID="reverbDecayTime" 
-                    suffix=" %" 
-                    style="--numbox-align: right; --text-align: right">
-                </petal-slider>
-            </div>
-
-            <div style="display: flex; flex-direction: row; justify-content: space-between">
-                <p>Window Size</p>
-                <petal-slider juceID="windowSize" 
-                    min="5" max="200" suffix=" ms" 
-                    style="--numbox-width: 100px; 
-                    --numbox-font-size: 14px; 
+                <p>Feedback</p>
+                <petal-num-slider juceID="feedbackAmt"
+                    min="5" max="200" suffix=" %"
+                    style="--numbox-width: 100px;
+                    --numbox-font-size: 14px;
                     --numbox-align: right">
-                </petal-slider>
+                </petal-num-slider>
             </div>
         </div>
 

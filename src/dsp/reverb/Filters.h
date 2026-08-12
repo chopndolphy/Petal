@@ -1,3 +1,4 @@
+#pragma once
 #include <JuceHeader.h>
 
 class APF
@@ -22,7 +23,7 @@ public:
         dl.reset();
     }
 
-    float setValues(float gain, float delayInMilliseconds){ 
+    void setValues(float gain, float delayInMilliseconds){ 
         this->gain = gain;
         delayInSamples = static_cast<int>(std::round((delayInMilliseconds / 1000.0) * sampleRate));
     }
@@ -43,8 +44,6 @@ private:
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> dl;
 };
 
-
-
 class SVF {
 public:
     void prepareToPlay(float sampleRate) {
@@ -55,7 +54,7 @@ public:
     void setCoefficients(float cf, float q)
     {
         g = math.tan(M_PI * cf / sampleRate);
-        k = 1.0f / q;
+        k = 1.0f / std::max(q, 0.001f);
         a1 = 1.0f / (1.0f + g * (g + k));
         a2 = g * a1;
         a3 = g * a2;
@@ -93,6 +92,26 @@ public:
         return y;
     }
 
+    float processSample(float x, float shape) noexcept // shape crossfade
+    {
+        float v3 = x - z2;
+        float v1 = a1 * z1 + a2 * v3;
+        float v2 = z2 + a2 * z1 + a3 * v3;
+
+        z1 = 2.0f * v1 - z1;
+        z2 = 2.0f * v2 - z2;
+
+        float lp = v2;
+        float bp = v1 * k;
+        float hp = x - k * v1 - v2;
+        float lpToBp = std::clamp(shape * 2, 0.0f, 1.0f);
+        float bpToHp = std::clamp(shape * 2 - 1.0f, 0.0f, 1.0f);
+
+        float y = lp + (bp - lp) * lpToBp + (hp - bp) * bpToHp;
+        return y;
+    }
+
+private:
     double sampleRate = 48000.0;
     float g = 0.0f, k = 0.0f, a1 = 0.0f, a2 = 0.0f, a3 = 0.0f, z1 = 0.0f, z2 = 0.0f;
     juce::dsp::FastMathApproximations math;

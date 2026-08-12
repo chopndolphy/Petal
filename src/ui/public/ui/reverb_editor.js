@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit';
-import "./ui/slider.js"
+import "./ui/pictSlider.js"
 import "./ui/button.js"
 import "./reverb_graphics.js"
 import { color } from './drawings.js';
@@ -66,37 +66,37 @@ export class ReverbEditor extends LitElement {
             <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 16px">
                 <div style="display: flex; flex-direction: column; align-items: center">
                     <label>Decay</label>
-                    <petal-slider 
-                        juceID="reverbDecayTime" 
-                        style="--slider-width: 80px; 
-                        --slider-height: 74px" 
+                    <petal-pict-slider
+                        juceID="reverbDecayTime"
+                        style="--slider-width: 80px;
+                        --slider-height: 74px"
                         .drawing=${drawReverbDecay}>
-                    </petal-slider>
+                    </petal-pict-slider>
 
-                    <petal-slider juceID="reverbDecayTime" 
-                        suffix=" %" 
-                        style="--numbox-color:  ${ color.lightgrey }; 
-                        --numbox-width: 100px; 
-                        --numbox-font-size: 14px; 
+                    <petal-num-slider juceID="reverbDecayTime"
+                        suffix=" %"
+                        style="--numbox-color:  ${ color.lightgrey };
+                        --numbox-width: 100px;
+                        --numbox-font-size: 14px;
                         --numbox-align: center">
-                    </petal-slider>
+                    </petal-num-slider>
                 </div>
 
                 <div style="display: flex; flex-direction: column; align-items: center">
                     <label>Size</label>
-                    <petal-slider juceID="reverbSize" 
-                        style="--slider-width: 80px; 
-                        --slider-height: 74px" 
+                    <petal-pict-slider juceID="reverbSize"
+                        style="--slider-width: 80px;
+                        --slider-height: 74px"
                         .drawing=${drawReverbSize}>
-                    </petal-slider>
+                    </petal-pict-slider>
 
-                    <petal-slider juceID="reverbSize" 
-                        suffix=" %" 
-                        style="--numbox-color: ${ color.lightgrey }; 
-                        --numbox-width: 100px; 
-                        --numbox-font-size: 14px; 
+                    <petal-num-slider juceID="reverbSize"
+                        suffix=" %"
+                        style="--numbox-color: ${ color.lightgrey };
+                        --numbox-width: 100px;
+                        --numbox-font-size: 14px;
                         --numbox-align: center">
-                    </petal-slider>
+                    </petal-num-slider>
                 </div>
 
                 <div style="display: flex; flex-direction: column; align-items: center">
@@ -106,19 +106,19 @@ export class ReverbEditor extends LitElement {
                     </canvas>
                     <div style="display: flex; flex-direction: row; align-items: center">
 
-                    <petal-slider juceID="reverbLPF" suffix=" Hz" 
-                        style="--numbox-color:  ${ color.lightgrey }; 
-                        --numbox-width: 75px; 
-                        --numbox-font-size: 14px; 
+                    <petal-num-slider juceID="reverbLPF" suffix=" Hz" mode="rate"
+                        style="--numbox-color:  ${ color.lightgrey };
+                        --numbox-width: 75px;
+                        --numbox-font-size: 14px;
                         --numbox-align: right">
-                    </petal-slider>
+                    </petal-num-slider>
 
-                    <petal-slider juceID="reverbHPF" suffix=" Hz"
-                        style="--numbox-color:  ${ color.lightgrey }; 
-                        --numbox-width: 75px; 
-                        --numbox-font-size: 14px; 
+                    <petal-num-slider juceID="reverbHPF" suffix=" Hz" mode="rate"
+                        style="--numbox-color:  ${ color.lightgrey };
+                        --numbox-width: 75px;
+                        --numbox-font-size: 14px;
                         --numbox-align: left">
-                    </petal-slider>
+                    </petal-num-slider>
 
                     </div>
                 </div>

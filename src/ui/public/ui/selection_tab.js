@@ -1,6 +1,5 @@
 import { LitElement, html, css } from 'lit';
 import { drawButton } from './drawings.js';
-import "./ui/slider.js"
 import "./ui/button.js"
 import { drawReverbSend, drawPitch, drawTapState, drawSelectDelay, drawSelectReverb, drawSelectIO } from './drawings.js';
 

@@ -119,14 +119,14 @@ PetalAudioProcessorEditor::~PetalAudioProcessorEditor()
 //==============================================================================
 void PetalAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    
+    g.fillAll(juce::Colour(0x1d1d1d));
 }
 
 void PetalAudioProcessorEditor::resized()
 {
     webview.setBounds(0, 0, 
-        getLocalBounds().getWidth(), 
-        getLocalBounds().getHeight());
+        getLocalBounds().getWidth() - 5, 
+        getLocalBounds().getHeight() - 5);
 
     juce::var windowWidth;
     windowWidth = getLocalBounds().getWidth();
