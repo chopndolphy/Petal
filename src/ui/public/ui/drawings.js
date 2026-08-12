@@ -37,7 +37,7 @@ export function drawLock(ctx, w, h, val) {
     ctx.fill();
 
     const cx = w * 0.5, cy = h * 0.5, r = w * 0.18;
-    const unlocked = val === 0 ? 0 : h * 0.15;
+    const unlocked = val ? 0 : h * 0.15;
 
     ctx.beginPath();
     ctx.moveTo(cx - r, cy - unlocked);
@@ -80,15 +80,14 @@ export function drawTapState(ctx, w, h, val){
 }
 
 export function drawSelectReverb(ctx, w, h, val) {
-    const cy = h/2, iconSize = w * 0.9;
+    const cy = h / 2, iconSize = w * 0.9;
 
     const drawFreq = (freq, opacity) => {
         ctx.beginPath()
         ctx.moveTo(w * 0.05, h * 0.95);
-        
-        for(let i = 0; i <= 48; i++){
-            const xPos = w * 0.05 + (w * 0.9/48) * i;
-            const amp = (h * 0.25/freq)
+        for (let i = 0; i <= 48; i++) {
+            const xPos = w * 0.05 + (w * 0.9 / 48) * i;
+            const amp = (h * 0.25 / freq)
             const yPos = cy + Math.sin((Math.PI * freq / 48) * i) * amp;
 
             ctx.lineTo(xPos, yPos)
@@ -96,11 +95,15 @@ export function drawSelectReverb(ctx, w, h, val) {
         ctx.lineTo(w * 0.95, h * 0.95);
         ctx.closePath()
 
-        const grad = ctx.createLinearGradient(w * 0.05, h / 2, w * 0.95, h / 2)
-        grad.addColorStop(0, withAlpha(color.pink, opacity));
-        grad.addColorStop(1, withAlpha(color.orange, opacity));
+        if (val) {
+            const grad = ctx.createLinearGradient(w * 0.05, h / 2, w * 0.95, h / 2)
+            grad.addColorStop(0, withAlpha(color.pink, opacity));
+            grad.addColorStop(1, withAlpha(color.orange, opacity));
+            ctx.fillStyle = grad;
+        } else {
+            ctx.fillStyle = withAlpha(color.grey, opacity);
+        }
 
-        ctx.fillStyle = grad;
         ctx.lineWidth = 1.5;
         ctx.lineCap = "round"
         ctx.lineJoin = "round"
@@ -113,28 +116,29 @@ export function drawSelectReverb(ctx, w, h, val) {
 }
 
 export function drawSelectDelay(ctx, w, h, val) {
-    const cx = w/2, cy = h/2;
+    const cx = w / 2, cy = h / 2;
 
-    for(let i = 0; i < 4; i++){
-        const radius = (w * 0.45/4) * (i + 1)
+    for (let i = 0; i < 4; i++) {
+        const radius = (w * 0.45 / 4) * (i + 1)
         ctx.beginPath();
 
         ctx.arc(cx, cy, radius, Math.PI * 0.75, Math.PI * 0.25, false);
 
-        const grad = ctx.createLinearGradient(w * 0.05, h / 2, w * 0.95, h / 2)
-        grad.addColorStop(0, color.pink);
-        grad.addColorStop(0.5, color.tan);
-        grad.addColorStop(1, color.orange);
+        if (val) {
+            const grad = ctx.createLinearGradient(w * 0.05, h / 2, w * 0.95, h / 2)
+            grad.addColorStop(0, color.pink);
+            grad.addColorStop(0.5, color.tan);
+            grad.addColorStop(1, color.orange);
+            ctx.strokeStyle = grad;
+        } else {
+            ctx.strokeStyle = color.grey;
+        }
 
         ctx.lineWidth = 1.5;
         ctx.lineCap = "round"
-        ctx.strokeStyle = grad;
         ctx.stroke()
-
     }
-
 }
-
 
 function drawInput(){
     const canvas = document.getElementById("reverbAmt");
@@ -581,26 +585,25 @@ export function drawFeedback(ctx, w, h, val = 0, aux = {}){
 }
 
 
-export function drawSelectIO(ctx, w, h, val = 0){
-    const cx = w/2, cy = h/2, iconSize = w * 0.8;
+export function drawSelectIO(ctx, w, h, val = 0) {
+    const cx = w / 2, cy = h / 2, iconSize = w * 0.8;
 
-    for(let i = 0; i < 4; i++){
+    for (let i = 0; i < 4; i++) {
 
         const x = { start: w * 0.1, end: w * 0.9, fader: w * 0.25 + w * 0.15 * i }
-        const y = cy - (iconSize/4) * i;
-        
-        ctx.beginPath()
-        ctx.moveTo(x.start, y)
+        const y = cy - (iconSize / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(x.start, y);
         ctx.lineTo(x.end, y);
 
-        ctx.strokeStyle = color.lightgrey;
-        ctx.lineCap = "round"
-        ctx.lineWidth = 1.5
+        ctx.strokeStyle = !val ? color.lightgrey : color.grey;
+        ctx.lineCap = "round";
+        ctx.lineWidth = 1.5;
         ctx.stroke();
 
         const faderSize = w * 0.1;
-        ctx.roundRect((x.start + (iconSize / 4) * i), y - faderSize/2, faderSize * 2, faderSize, 4);
-        ctx.fillStyle = lerpColor(color.pink, color.orange, 0.25 * i)
+        ctx.roundRect((x.start + (iconSize / 4) * i), y - faderSize / 2, faderSize * 2, faderSize, 4);
+        ctx.fillStyle = !val ? lerpColor(color.pink, color.orange, 0.25 * i) : color.grey;
         ctx.fill();
     }
 }

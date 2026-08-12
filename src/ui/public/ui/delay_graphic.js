@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { LitElement, html, css } from 'lit';
 import * as THREE from 'three';
 import { getSliderState } from '../juce.js';
 import { Line2 } from 'three/addons/lines/Line2.js';
@@ -13,7 +13,8 @@ export class DelayGraphic extends LitElement {
 
     static properties = {
         width: { type: Number },
-        height: { type: Number }
+        height: { type: Number },
+        isStereoLock: { type: Boolean }
     }
 
     static styles = css`
@@ -108,7 +109,7 @@ export class DelayGraphic extends LitElement {
             if (this.mouseState === 'idle'){
                 const rect = this.container.getBoundingClientRect();
                 const isLeft = (e.clientX - rect.left) < this.width / 2;
-                const r = 4;
+                const r = 10;
                 this.sx.set((isLeft ? -1 : 1) * r * 0.5);
                 this.sy.set(-r * 0.5);
                 this.sz.set(-r * -0.7);
@@ -130,7 +131,6 @@ export class DelayGraphic extends LitElement {
                     this.skewRSlider.setNormalisedValue(state.skew);
                 }
 
-                // roll reference point forward so next move is relative to this one
                 this.lastClickXPos = e.clientX;
                 this.lastClickYPos = e.clientY;
             }
@@ -199,19 +199,21 @@ export class DelayGraphic extends LitElement {
         for (let channel = 0; channel < 2; channel++) {
             const startAngle = channel === 0 ? Math.PI * 0.75 : Math.PI * 1.5;
             const endAngle = startAngle + Math.PI * 0.75;
+            
             const xOffset = channel === 0 ? -0.03125 : 0.03125;
+            const xOffsetSmooth = new Smoothening(0.1, this.isStereoLock ? 0 : xOffset);
 
             for (let tap = 0; tap < 8; tap++) {
-                const radius = channel === 0 ? delayTimesL[tap] : delayTimesR[tap];
+                const rawRadius = channel === 0 ? delayTimesL[tap] : delayTimesR[tap];
+                const radiusSmooth = new Smoothening(0.1, rawRadius);
+                const radius = radiusSmooth.get();
 
-                // fix segment count based on max possible radius, not live radius,
-                // so vertex count never changes frame-to-frame
                 const maxRadius = 4; // TODO: set to your actual max delay-time radius
                 const arcLength = maxRadius * (endAngle - startAngle);
                 const segmentCount = Math.max(64, Math.round(arcLength * 48));
 
                 const geometry = new LineGeometry();
-                const positions = this.#arcPositions(xOffset, radius, startAngle, endAngle, segmentCount);
+                const positions = this.#arcPositions(xOffsetSmooth.get(), radius, startAngle, endAngle, segmentCount);
 
                 geometry.setPositions(positions);
                 const vertexCount = positions.length / 3; // one RGB triple needed per vertex
@@ -238,9 +240,11 @@ export class DelayGraphic extends LitElement {
                     channel,
                     tap,
                     xOffset,
+                    xOffsetSmooth,
                     startAngle,
                     endAngle,
                     segmentCount,
+                    radiusSmooth,
                     opacitySmooth: new Smoothening(0.05, tapStates[tap] === 1 ? 1 : 0)
                 });
                 this.scene.add(arc);
@@ -249,9 +253,15 @@ export class DelayGraphic extends LitElement {
     }
 
     updateArcs() {
-        for (const { mesh, channel, tap, xOffset, startAngle, endAngle, segmentCount, opacitySmooth } of this.arcs) {
-            const radius = channel === 0 ? delayTimesL[tap] : delayTimesR[tap];
-            mesh.geometry.setPositions(this.#arcPositions(xOffset, radius, startAngle, endAngle, segmentCount));
+        for (const { mesh, channel, tap, xOffset, xOffsetSmooth, startAngle, endAngle, segmentCount, radiusSmooth, opacitySmooth } of this.arcs) {
+            const rawRadius = channel === 0 ? delayTimesL[tap] : delayTimesR[tap];
+            radiusSmooth.set(rawRadius);
+            const radius = radiusSmooth.get();
+
+            xOffsetSmooth.set(this.isStereoLock ? 0 : xOffset);
+            const offset = xOffsetSmooth.get();
+
+            mesh.geometry.setPositions(this.#arcPositions(offset, radius, startAngle, endAngle, segmentCount));
 
             opacitySmooth.set(tapStates[tap] === 1 ? 1 : 0);
             mesh.material.opacity = opacitySmooth.get();

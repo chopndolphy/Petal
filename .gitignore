@@ -12,3 +12,7 @@ _deps
 CMakeUserPresets.json
 /build
 /resource
+
+# UI bundling
+src/ui/node_modules
+src/ui/dist

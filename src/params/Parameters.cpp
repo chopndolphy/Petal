@@ -140,7 +140,7 @@ Parameters::createParameterLayout()
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"round", 1},
                                                            "Round",
-                                                           juce::NormalisableRange<float>{0.0f, 1.0f, 0.01}, 0.0f));
+                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 0.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"feedbackAmt", 1},
                                                            "Feedback Amount",

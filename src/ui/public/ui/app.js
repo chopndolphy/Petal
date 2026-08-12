@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { LitElement, html, css } from 'lit';
 import './delay_editor.js'
 import './reverb_editor.js'
 import './tap_editor.js'
@@ -8,11 +8,16 @@ import './selection_tab.js'
 class App extends LitElement {
     static properties = {
         isDisplayingDelay: { type: Boolean },
-        isDisplayingIO: { type: Boolean }
+        isDisplayingIO: { type: Boolean },
+        scale: { type: Number }
     }
 
     static styles = css`
-
+        #wrapper {
+            margin: 10px 0 0 10px; /* your fixed top-left margin, untouched by scale */
+            width: fit-content;
+            height: fit-content;
+        }
 
         #divvy {
             width: 850px;
@@ -20,7 +25,12 @@ class App extends LitElement {
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             transform-origin: top left;
-            transform: scale(0.75); 
+            transform: scale(${ 0.875 }); 
+
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10 and IE 11 */
+            user-select: none; /* Standard syntax */
+
         }
 
         #effects {
@@ -33,17 +43,27 @@ class App extends LitElement {
             border-radius: 10px;
         }
     `
-
     constructor(){
         super()
         this.isDisplayingDelay = true;
         this.isDisplayingIO = true;
+        this.scale = 0.875;
         console.log("loaded")
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        if (window.__JUCE__) {
+            window.__JUCE__.backend.addEventListener("windowWidth", (values) => {
+                this.scale = JSON.parse(values) / 950;
+            });
+        }
     }
 
     render(){
         return html`
-        <main id="divvy">
+        <div id="wrapper">
+        <main id="divvy" style="transform-origin: top left; transform: scale(${ this.scale })">
             <div style="display: flex; flex-direction: row; align-items: center; gap: 10px; margin: 0px">
                 <!-- delay and reverb -->
                 <div id="effects" style="position: relative">
@@ -75,7 +95,7 @@ class App extends LitElement {
                 </div>
             </div>
         </main>
-
+        </div>
         `
     }
 }

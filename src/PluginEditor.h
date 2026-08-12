@@ -7,15 +7,13 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <array>
 //==============================================================================
-/**
-*/
+
 class PetalAudioProcessorEditor  : public juce::AudioProcessorEditor, public juce::Timer
 {
 public:
     PetalAudioProcessorEditor (PetalAudioProcessor&);
     ~PetalAudioProcessorEditor() override;
 
-    //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
     
@@ -32,6 +30,7 @@ private:
         isSyncLRelay{"isSyncL"},
         isSyncRRelay{"isSyncR"},
         stereoLockRelay{"stereoLock"},
+
         positionLRelay{"positionL"},
         skewLRelay{"skewL"},
         positionRRelay{"positionR"},
@@ -135,6 +134,6 @@ private:
 
     auto getResource(const juce::String& url) -> std::optional<juce::WebBrowserComponent::Resource>;
     void timerCallback() override;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PetalAudioProcessorEditor)
+    std::unique_ptr<juce::ResizableBorderComponent> resizer;
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PetalAudioProcessorEditor)
 };

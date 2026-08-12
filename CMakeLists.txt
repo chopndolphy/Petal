@@ -29,7 +29,51 @@ juce_add_plugin(Petal
     NEEDS_WEBVIEW2 TRUE
 )
 
-juce_generate_juce_header(Petal) 
+juce_generate_juce_header(Petal)
+
+# ------------------------------------------------------------------------------
+# Web UI: bundle lit + three (npm) with esbuild, embed the result as binary data
+# ------------------------------------------------------------------------------
+find_program(NPM_EXECUTABLE npm REQUIRED)
+
+set(PETAL_UI_DIR      "${CMAKE_SOURCE_DIR}/src/ui")
+set(PETAL_UI_DIST_DIR "${PETAL_UI_DIR}/dist")
+set(PETAL_UI_HTML      "${PETAL_UI_DIST_DIR}/index.html")
+set(PETAL_UI_BUNDLE_JS "${PETAL_UI_DIST_DIR}/app.bundle.js")
+set(PETAL_UI_NPM_STAMP "${PETAL_UI_DIR}/node_modules/.install-stamp")
+
+file(GLOB_RECURSE PETAL_UI_SOURCES CONFIGURE_DEPENDS "${PETAL_UI_DIR}/public/*")
+
+# Reinstall node_modules whenever package.json/package-lock.json change.
+add_custom_command(
+    OUTPUT "${PETAL_UI_NPM_STAMP}"
+    COMMAND ${NPM_EXECUTABLE} install
+    COMMAND ${CMAKE_COMMAND} -E touch "${PETAL_UI_NPM_STAMP}"
+    WORKING_DIRECTORY "${PETAL_UI_DIR}"
+    DEPENDS "${PETAL_UI_DIR}/package.json" "${PETAL_UI_DIR}/package-lock.json"
+    COMMENT "Installing Petal UI npm dependencies (lit, three, esbuild)"
+    VERBATIM
+)
+
+# Re-bundle whenever any UI source file (or the build script) changes.
+add_custom_command(
+    OUTPUT "${PETAL_UI_HTML}" "${PETAL_UI_BUNDLE_JS}"
+    COMMAND ${NPM_EXECUTABLE} run build
+    WORKING_DIRECTORY "${PETAL_UI_DIR}"
+    DEPENDS "${PETAL_UI_NPM_STAMP}" "${PETAL_UI_DIR}/build.mjs" ${PETAL_UI_SOURCES}
+    COMMENT "Bundling Petal UI with esbuild"
+    VERBATIM
+)
+
+add_custom_target(PetalUIBundle DEPENDS "${PETAL_UI_HTML}" "${PETAL_UI_BUNDLE_JS}")
+
+juce_add_binary_data(PetalUIData
+    NAMESPACE PetalUIData
+    SOURCES
+        "${PETAL_UI_HTML}"
+        "${PETAL_UI_BUNDLE_JS}"
+)
+add_dependencies(PetalUIData PetalUIBundle)
 
 # Source files
 target_sources(Petal
@@ -47,7 +91,6 @@ target_sources(Petal
         src/dsp/reverb/Reverb.cpp
         src/dsp/reverb/Reverb.h
         src/dsp/Utility.h
-
 )
 
 # Preprocessor definitions
@@ -65,6 +108,7 @@ target_link_libraries(Petal
         juce::juce_audio_utils
         juce::juce_dsp
         juce::juce_gui_extra
+        PetalUIData
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

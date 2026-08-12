@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { LitElement, html, css } from 'lit';
 import { getSliderState } from '../../juce.js';
 
 export class PetalButton extends LitElement {
@@ -50,6 +50,11 @@ export class PetalButton extends LitElement {
 
             this._onJuceChange = () => {
                 this.value = this.juceSlider.getNormalisedValue() >= 0.5;
+                this.dispatchEvent(new CustomEvent('change', {
+                    detail: this.value,
+                    bubbles: true,
+                    composed: true
+                }));
             };
             this._onJuceChange();
             this.juceSlider.valueChangedEvent.addListener(this._onJuceChange);
@@ -86,7 +91,12 @@ export class PetalButton extends LitElement {
         this.value = !this.value;
         if (this.juceSlider) {
             this.juceSlider.setNormalisedValue(this.value ? 1 : 0);
-        } 
+        }
+        this.dispatchEvent(new CustomEvent('change', {
+            detail: this.value,
+            bubbles: true,
+            composed: true
+        }));
     }
 
     draw() {

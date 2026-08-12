@@ -2,45 +2,35 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "BinaryData.h"
 
 //==============================================================================
 
 namespace {
-std::vector<std::byte> streamToVector(juce::InputStream& stream) {
-  using namespace juce;
-  const auto sizeInBytes = static_cast<size_t>(stream.getTotalLength());
-  std::vector<std::byte> result(sizeInBytes);
-  stream.setPosition(0);
-  [[maybe_unused]] const auto bytesRead =
-      stream.read(result.data(), result.size());
-  jassert(bytesRead == static_cast<ssize_t>(sizeInBytes));
-  return result;
-}
+    static const char* getMimeForExtension(const juce::String& extension) {
+        static const std::unordered_map<juce::String, const char*> mimeMap = {
+            {{"htm"}, "text/html"},
+            {{"html"}, "text/html"},
+            {{"txt"}, "text/plain"},
+            {{"jpg"}, "image/jpeg"},
+            {{"jpeg"}, "image/jpeg"},
+            {{"svg"}, "image/svg+xml"},
+            {{"ico"}, "image/vnd.microsoft.icon"},
+            {{"json"}, "application/json"},
+            {{"png"}, "image/png"},
+            {{"css"}, "text/css"},
+            {{"map"}, "application/json"},
+            {{"js"}, "text/javascript"},
+            {{"woff2"}, "font/woff2"}};
 
-static const char* getMimeForExtension(const juce::String& extension) {
-  static const std::unordered_map<juce::String, const char*> mimeMap = {
-      {{"htm"}, "text/html"},
-      {{"html"}, "text/html"},
-      {{"txt"}, "text/plain"},
-      {{"jpg"}, "image/jpeg"},
-      {{"jpeg"}, "image/jpeg"},
-      {{"svg"}, "image/svg+xml"},
-      {{"ico"}, "image/vnd.microsoft.icon"},
-      {{"json"}, "application/json"},
-      {{"png"}, "image/png"},
-      {{"css"}, "text/css"},
-      {{"map"}, "application/json"},
-      {{"js"}, "text/javascript"},
-      {{"woff2"}, "font/woff2"}};
+        if (const auto it = mimeMap.find(extension.toLowerCase());
+            it != mimeMap.end())
+            return it->second;
 
-  if (const auto it = mimeMap.find(extension.toLowerCase());
-      it != mimeMap.end())
-    return it->second;
-
-  jassertfalse;
-  return "";
-}
-} // namespace
+        jassertfalse;
+        return "";
+        }
+} 
 
 
 //==============================================================================
@@ -59,8 +49,20 @@ PetalAudioProcessorEditor::PetalAudioProcessorEditor(PetalAudioProcessor &p)
 {
     addAndMakeVisible(webview);
 
+#if JUCE_DEBUG
     webview.goToURL("http://localhost:4000");
-    setSize(910, 460);
+#else
+    webview.goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
+#endif
+    const int width = 950;
+    setResizable(true, false);
+    setResizeLimits((int)width * 0.75f, (int)width * 0.75f / 2, (int)width, (int)width / 2);
+    getConstrainer()->setFixedAspectRatio(2); // <-- likely triggers a bounds check/resize here
+
+    resizer = std::make_unique<juce::ResizableBorderComponent>(this, getConstrainer()); // resizer created AFTER
+    addAndMakeVisible(resizer.get());
+
+    setSize(width, width / 2); 
     startTimerHz(30);
 
     inputLevelAttachment.sendInitialUpdate();
@@ -106,6 +108,7 @@ PetalAudioProcessorEditor::PetalAudioProcessorEditor(PetalAudioProcessor &p)
             *tapReverbAmtRelays[tap], nullptr);
         tapReverbAmtAttachments[tap]->sendInitialUpdate();
     }
+
 }
 
 PetalAudioProcessorEditor::~PetalAudioProcessorEditor()
@@ -116,23 +119,48 @@ PetalAudioProcessorEditor::~PetalAudioProcessorEditor()
 //==============================================================================
 void PetalAudioProcessorEditor::paint (juce::Graphics& g)
 {
+    
 }
 
 void PetalAudioProcessorEditor::resized()
 {
-    webview.setBounds(0, 0, getLocalBounds().getWidth(), getLocalBounds().getHeight());
+    webview.setBounds(0, 0, 
+        getLocalBounds().getWidth(), 
+        getLocalBounds().getHeight());
+
+    juce::var windowWidth;
+    windowWidth = getLocalBounds().getWidth();
+    webview.emitEventIfBrowserIsVisible("windowWidth", juce::JSON::toString(windowWidth));
+
+    if (resizer != nullptr)
+        resizer->setBounds(getLocalBounds());
 }
 
 auto PetalAudioProcessorEditor::getResource(const juce::String& url) -> std::optional<juce::WebBrowserComponent::Resource>
 {
-    static const auto resourceRoot = juce::File("/Users/tmatsui1/GitHub/Petal/src/ui/public");
-    const auto resourceToRetrieve = url == "/" ? "index.html" : url.fromFirstOccurrenceOf("/", false, false);
+    const auto resourceToRetrieve = url == "/" ? juce::String("index.html") : url.fromFirstOccurrenceOf("/", false, false);
 
-    const auto resource = resourceRoot.getChildFile(resourceToRetrieve).createInputStream();
-    if (resource){
+    for (int i = 0; i < PetalUIData::namedResourceListSize; ++i)
+    {
+        const auto* symbolName = PetalUIData::namedResourceList[i];
+        const auto* originalFilename = PetalUIData::getNamedResourceOriginalFilename(symbolName);
+
+        if (originalFilename == nullptr || resourceToRetrieve != originalFilename)
+            continue;
+
+        int dataSizeInBytes = 0;
+        const auto* data = PetalUIData::getNamedResource(symbolName, dataSizeInBytes);
+
+        if (data == nullptr)
+            return std::nullopt;
+
+        const auto* bytes = reinterpret_cast<const std::byte*>(data);
         const auto extension = resourceToRetrieve.fromLastOccurrenceOf(".", false, false);
-        return juce::WebBrowserComponent::Resource{streamToVector(*resource), getMimeForExtension(extension)};
+        return juce::WebBrowserComponent::Resource{
+            std::vector<std::byte>(bytes, bytes + dataSizeInBytes),
+            getMimeForExtension(extension)};
     }
+
     return std::nullopt;
 }
 

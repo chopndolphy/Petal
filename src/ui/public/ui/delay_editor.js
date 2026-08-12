@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { LitElement, html, css } from 'lit';
 import "./ui/slider.js"
 import "./ui/button.js"
 import "./delay_graphic.js"
@@ -22,7 +22,7 @@ export class DelayEditor extends LitElement {
         super();
         this.isSyncL = true;
         this.isSyncR = true;
-        this.isStereoLock = false;
+        this.isStereoLock = true;
     }
     static styles = css`
         *, *::before, *::after {
@@ -74,8 +74,10 @@ export class DelayEditor extends LitElement {
                 </petal-button>
             </div>
 
-            <petal-button juceID="stereoLock" style="--button-width: 30px; --button-height: 30px" .drawing=${drawLock}></petal-button>
-
+            <petal-button juceID="stereoLock" style="--button-width: 30px; --button-height: 30px" .drawing=${drawLock}
+                @change=${e => this.isStereoLock = e.detail}>
+            </petal-button>
+            
             <!-- right delay -->
             <div style="display: flex; flex-direction: column; align-items: flex-end">
                 <div style=" height: 30px;">
@@ -110,7 +112,7 @@ export class DelayEditor extends LitElement {
 
         <!-- visualizer -->
         <div style="display: flex; flex-direction: column; align-items: center">
-            <delay-graphic style="width: 300px; height: 300px"></delay-graphic>
+            <delay-graphic style="width: 300px; height: 300px" .isStereoLock="${ this.isStereoLock }"></delay-graphic>
         </div>
 
         <!-- bottom controls -->

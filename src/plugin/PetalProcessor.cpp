@@ -122,8 +122,8 @@ void PetalProcessor::setDelayTapTimes(float freeTimeLInMs, float freeTimeRInMs, 
                                       bool isSyncL, bool isSyncR, bool stereoLock)
 {
     const int lastIndex = (int)syncTimeOptions.size() - 1;
-    float syncTimeLInMs = 1000.0f / ((bpm / 60.0f) * syncTimeOptions[(size_t) juce::jlimit(0, lastIndex, syncIndexL)]);
-    float syncTimeRInMs = 1000.0f / ((bpm / 60.0f) * syncTimeOptions[(size_t) juce::jlimit(0, lastIndex, syncIndexR)]);
+    float syncTimeLInMs = syncTimeOptions[(size_t)juce::jlimit(0, lastIndex, syncIndexL)] * (240000.0f / bpm);
+    float syncTimeRInMs = syncTimeOptions[(size_t)juce::jlimit(0, lastIndex, syncIndexR)] * (240000.0f / bpm);
 
     float timeLInMs = isSyncL ? syncTimeLInMs : freeTimeLInMs;
     float timeRInMs = stereoLock ? timeLInMs : (isSyncR ? syncTimeRInMs : freeTimeRInMs);

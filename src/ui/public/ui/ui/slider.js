@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { LitElement, html, css } from 'lit';
 import { getSliderState } from '../../juce.js';
 import { color } from '../drawings.js';
 
@@ -92,16 +92,9 @@ export class PetalSlider extends LitElement {
                 this.drawCanvas();
             });
             this.resizeObserver.observe(this.canvas);
-        }        
-        
-        this.juceSlider = getSliderState(this.juceID);
+        }
 
-        this._onJuceChange = () => {
-            if (this.isEditing) return;
-            this.updateDisplay(this.juceSlider.getNormalisedValue());
-        };
-        this._onJuceChange();
-        this.juceSlider.valueChangedEvent.addListener(this._onJuceChange);
+        this.rebindJuceSlider();
 
         if (this.input) {
             this.input.addEventListener('keydown', (e) => {
@@ -136,15 +129,34 @@ export class PetalSlider extends LitElement {
     disconnectedCallback() {
         super.disconnectedCallback();
         this.resizeObserver?.disconnect();
+        if (this.onJuceChange) {
+            this.juceSlider?.valueChangedEvent.removeListener(this.onJuceChange);
+        }
     }
 
     updated(changedProperties) {
-        // drawingAux carries external state (e.g. tap on/off) that affects the drawing
-        // even when `drawing` itself hasn't changed, so it must also trigger a repaint.
         if (changedProperties.has('drawing') || changedProperties.has('drawingAux')) {
             this.drawCanvas();
         }
+
+        if (changedProperties.has('juceID') && this.hasUpdated) {
+            this.rebindJuceSlider();
+        }
     }
+
+    rebindJuceSlider() {
+        if (this.onJuceChange) {
+            this.juceSlider?.valueChangedEvent.removeListener(this.onJuceChange);
+        }
+        this.juceSlider = getSliderState(this.juceID);
+        this.onJuceChange = () => {
+            if (this.isEditing) return;
+            this.updateDisplay(this.juceSlider.getNormalisedValue());
+        };
+        this.onJuceChange();
+        this.juceSlider.valueChangedEvent.addListener(this.onJuceChange);
+    }
+
 
     lastClickTime = 0;
     lastClickYPos = 0;

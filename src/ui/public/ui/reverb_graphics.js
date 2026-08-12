@@ -1,15 +1,16 @@
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { LitElement, html, css } from 'lit';
 import * as THREE from 'three';
 import { reverbLevelMsr } from '../event_listener.js';
 import "./ui/utility.js"
 import { Smoothening } from './ui/utility.js';
+import { getSliderState } from '../juce.js';
 import { color } from './drawings.js';
 
 export class ReverbGraphic extends LitElement {
 
     static properties = {
         width: { type: Number },
-        height: { type: Number }
+        height: { type: Number }, 
     }
 
     static styles = css`
@@ -30,11 +31,6 @@ export class ReverbGraphic extends LitElement {
         super();
         this.width = 450;
         this.height = 300;
-
-        this.valA = 0;
-        this.valB = 0;
-
-        this.reverbLevel = 0;
     }
 
     firstUpdated() {
@@ -46,7 +42,26 @@ export class ReverbGraphic extends LitElement {
             }
         });
         resizeObserver.observe(this.container);
+
+        const onSliderChange = () => {
+           // if (!this.geometry) return
+            let decay = this.reverbDecaySlider.getNormalisedValue();
+            decay = decay * 2 + 1;
+
+            let size = this.reverbSizeSlider.getNormalisedValue();
+            size = size * 0.75 + 0.25;
+            
+            this.displace(decay);
+            this.mesh.material.opacity = size;
+        }
         
+        this.reverbDecaySlider = getSliderState("reverbDecayTime");
+        this.reverbDecaySlider.valueChangedEvent.addListener(onSliderChange);
+
+        this.reverbSizeSlider = getSliderState("reverbSize");
+        this.reverbSizeSlider.valueChangedEvent.addListener(onSliderChange);
+
+        this.reverbLevelMsr = reverbLevelMsr;   
     }
 
     createTexture(){
@@ -86,15 +101,33 @@ export class ReverbGraphic extends LitElement {
 
         const texture = new THREE.CanvasTexture(this.createTexture());
         texture.colorSpace = THREE.SRGBColorSpace
-        const material = new THREE.MeshBasicMaterial({ 
+        const material = new THREE.MeshBasicMaterial({
             side: THREE.DoubleSide,
             transparent: true,
             opacity: 0.8,
+            depthWrite: false,  
             map: texture
         });
-        this.mesh = new THREE.Mesh(this.geometry, material)
+        this.mesh = new THREE.Mesh(this.geometry, material);
+        this.mesh.renderOrder = 0; // add
         this.mesh.rotation.x = -Math.PI / 2;
+        this.displace(0)
         this.scene.add(this.mesh);
+
+        this.outerMesh = new THREE.Mesh(this.geometry,
+            new THREE.MeshBasicMaterial({
+                side: THREE.DoubleSide,
+                color: color.tan,
+                transparent: true,
+                opacity: 0.1,
+                depthWrite: false, // add
+            }));
+        this.outerMesh.renderOrder = 1; 
+        this.outerMesh.rotation.x = -Math.PI / 2;
+        this.scene.add(this.outerMesh);
+        this.reverbSmoother = new Smoothening(0.1, 0);
+
+
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setSize(this.width, this.height);
@@ -131,7 +164,7 @@ export class ReverbGraphic extends LitElement {
          }));
     }
 
-    displace(amount = 4, falloff = 0, dampen = 1) {
+    displace(amount = 0) {
         const width = this.geometry.parameters.width;
         const colorAttr = this.geometry.attributes.color;
         const vertexColor = new THREE.Color();
@@ -142,12 +175,11 @@ export class ReverbGraphic extends LitElement {
             const z = this.srcPos.getZ(i);
 
             const u = (x + width / 2) / width;
-            const falloffExp = falloff * 1 + 1;
+            const falloffExp = amount * 1 + 1;
             const envelope = Math.pow(1 - u, falloffExp);
 
             const baseFreq = Math.PI * 2 * amount;
-            const carrierFreq = dampen;
-            const wave = Math.cos(baseFreq * (1 - envelope) + Math.PI * carrierFreq * x);
+            const wave = Math.cos(baseFreq * (1 - envelope) + Math.PI * 2 * x);
             const height = wave * wave;
             const amplitude = height * envelope;
 
@@ -158,16 +190,15 @@ export class ReverbGraphic extends LitElement {
     }
     
     animate() {
-        const sReverb = new Smoothening(0.1, 0)
-        sReverb.set(Math.abs(reverbLevelMsr))
+        this.reverbSmoother.set(Math.abs(reverbLevelMsr));
 
-        this.raf = requestAnimationFrame(() => this.animate());
 
-        this.reverbLevel = sReverb.get();
-        
-        const lvl = this.reverbLevel * 6 + 1;
-        this.displace(2, sReverb.get(), lvl);
+        this.reverbLevel = this.reverbSmoother.get();
+        this.outerMesh.position.y = this.reverbLevel + 0.02;
+        this.outerMesh.material.opacity = this.reverbLevel * 0.75
+
         this.renderer.render(this.scene, this.camera);
+        this.raf = requestAnimationFrame(() => this.animate());
     }
 
     disconnectedCallback() {

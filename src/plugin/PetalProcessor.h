@@ -30,18 +30,28 @@ private:
     void advancePhase(int tap) noexcept;
     static float warpTapPosition(float basePos, float pos, float exponent, float round) // round should be a factor
     {
+        float warped;
         if (basePos <= pos)
         {
             float span = pos;
             float distFrac = span <= 0.0001f ? 0.0f : (pos - basePos) / span;
-            return pos - std::pow(distFrac, exponent) * span;
+            warped = pos - std::pow(distFrac, exponent) * span;
         }
         else
         {
             float span = 1.0f - pos;
             float distFrac = span <= 0.0001f ? 0.0f : (basePos - pos) / span;
-            return pos + std::pow(distFrac, exponent) * span;
+            warped = pos + std::pow(distFrac, exponent) * span;
         }
+        if (round > 0.0001f)
+        {
+            int pow2 = 8 - (int)std::floor((round / 100.0f) * 7);
+            pow2 = juce::jlimit(1, 8, pow2);
+            const float step = 1.0f / (float)(1 << pow2); 
+            warped = std::round(warped / step) * step;
+        }
+
+        return juce::jlimit(0.0f, 1.0f, warped);
     }
 
     static constexpr std::array<double, 11> syncTimeOptions = {
