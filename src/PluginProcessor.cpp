@@ -144,8 +144,9 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
                                  params->delayLevel->getSmooth(),
                                  params->dryLevel->getSmooth(),
 
-                                     0,
-                                 0, params->windowSize->getSmooth(),
+                                 params->feedbackAmt->getSmooth(),
+                                 params->feedbackLen->getSmooth(),
+                                 params->windowSize->getSmooth(),
 
                                  params->lfoRate->getSmooth(),   // lfo rate
                                  params->lfoAmount->getSmooth(), // lfo amount

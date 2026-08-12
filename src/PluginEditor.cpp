@@ -57,12 +57,12 @@ PetalAudioProcessorEditor::PetalAudioProcessorEditor(PetalAudioProcessor &p)
     const int width = 950;
     setResizable(true, false);
     setResizeLimits((int)width * 0.75f, (int)width * 0.75f / 2, (int)width, (int)width / 2);
-    getConstrainer()->setFixedAspectRatio(2); // <-- likely triggers a bounds check/resize here
+    getConstrainer()->setFixedAspectRatio(2);
 
     resizer = std::make_unique<juce::ResizableBorderComponent>(this, getConstrainer()); // resizer created AFTER
     addAndMakeVisible(resizer.get());
 
-    setSize(width, width / 2); 
+    setSize((int)width * 0.875f, (int)width * 0.875f / 2);
     startTimerHz(30);
 
     inputLevelAttachment.sendInitialUpdate();
@@ -119,18 +119,18 @@ PetalAudioProcessorEditor::~PetalAudioProcessorEditor()
 //==============================================================================
 void PetalAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(0x1d1d1d));
+    g.fillAll(juce::Colour(0xff1d1d1d));
 }
 
 void PetalAudioProcessorEditor::resized()
 {
-    webview.setBounds(0, 0, 
-        getLocalBounds().getWidth() - 5, 
-        getLocalBounds().getHeight() - 5);
+    const auto webviewBounds = getLocalBounds();
+    webview.setBounds(0, 0, webviewBounds.getWidth() - 5, webviewBounds.getHeight() - 5);
 
-    juce::var windowWidth;
-    windowWidth = getLocalBounds().getWidth();
-    webview.emitEventIfBrowserIsVisible("windowWidth", juce::JSON::toString(windowWidth));
+    auto *windowSize = new juce::DynamicObject();
+    windowSize->setProperty("width", webviewBounds.getWidth());
+    windowSize->setProperty("height", webviewBounds.getHeight());
+    webview.emitEventIfBrowserIsVisible("windowSize", juce::JSON::toString(juce::var(windowSize)));
 
     if (resizer != nullptr)
         resizer->setBounds(getLocalBounds());

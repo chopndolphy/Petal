@@ -94,7 +94,7 @@ export class IOEditor extends LitElement {
 
             <div class="row">
                 <label>Input Level</label>
-                <petal-num-slider juceID="inputLevel" suffix=" dB" style="--numbox-align: right"></petal-num-slider>
+                <petal-num-slider juceID="inputLevel" suffix=" dB" mode="db" style="--numbox-align: right"></petal-num-slider>
             </div>
 
             <div>
@@ -102,7 +102,7 @@ export class IOEditor extends LitElement {
                 <div class="group-row">
                     <div class="row">
                         <label style="color: grey">Cutoff</label>
-                        <petal-num-slider juceID="filterCutoff" suffix=" %" style="--numbox-align: right"></petal-num-slider>
+                        <petal-num-slider juceID="filterCutoff" suffix=" %" mode="rate" style="--numbox-align: right"></petal-num-slider>
                     </div>
                     <div class="row">
                         <label style="color: grey">Q</label>
@@ -120,7 +120,7 @@ export class IOEditor extends LitElement {
                 <div class="group-row align-left">
                     <div class="row">
                         <label style="color: grey">Rate</label>
-                        <petal-num-slider juceID="lfoRate" suffix=" %" style="--numbox-align: right"></petal-num-slider>
+                        <petal-num-slider juceID="lfoRate" suffix=" Hz" style="--numbox-align: right"></petal-num-slider>
                     </div>
                     <div class="row">
                         <label style="color: grey">Amount</label>
@@ -150,17 +150,17 @@ export class IOEditor extends LitElement {
 
             <div class="row">
                 <label>Delay Level</label>
-                <petal-num-slider juceID="delayLevel" suffix=" dB" style="--numbox-align: right"></petal-num-slider>
+                <petal-num-slider juceID="delayLevel" suffix=" dB" mode="db" style="--numbox-align: right"></petal-num-slider>
             </div>
 
             <div class="row">
                 <label>Reverb Level</label>
-                <petal-num-slider juceID="reverbLevel" suffix=" dB" style="--numbox-align: right"></petal-num-slider>
+                <petal-num-slider juceID="reverbLevel" suffix=" dB" mode="db" style="--numbox-align: right"></petal-num-slider>
             </div>
 
             <div class="row">
                 <label>Dry Level</label>
-                <petal-num-slider juceID="dryLevel" suffix=" dB" style="--numbox-align: right"></petal-num-slider>
+                <petal-num-slider juceID="dryLevel" suffix=" dB" mode="db" style="--numbox-align: right"></petal-num-slider>
             </div>
         </div>
         `

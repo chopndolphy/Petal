@@ -99,23 +99,23 @@ export class ReverbEditor extends LitElement {
                     </petal-num-slider>
                 </div>
 
-                <div style="display: flex; flex-direction: column; align-items: center">
+                <div style="display: flex; flex-direction: column; align-items: center; width: 160px">
                     <label>Tone</label>
                     <canvas id="reverbTone"
-                        style="width: 120px; height: 74px">
+                        style="width: 140px; height: 74px">
                     </canvas>
                     <div style="display: flex; flex-direction: row; align-items: center">
 
                     <petal-num-slider juceID="reverbLPF" suffix=" Hz" mode="rate"
                         style="--numbox-color:  ${ color.lightgrey };
-                        --numbox-width: 75px;
+                        --numbox-width: 80px;
                         --numbox-font-size: 14px;
                         --numbox-align: right">
                     </petal-num-slider>
 
                     <petal-num-slider juceID="reverbHPF" suffix=" Hz" mode="rate"
                         style="--numbox-color:  ${ color.lightgrey };
-                        --numbox-width: 75px;
+                        --numbox-width: 80px;
                         --numbox-font-size: 14px;
                         --numbox-align: left">
                     </petal-num-slider>

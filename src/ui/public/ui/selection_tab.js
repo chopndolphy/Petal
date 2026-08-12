@@ -20,11 +20,6 @@ export class SelectionTab extends LitElement {
             box-sizing: border-box;
         }
 
-        #tapInstance {
-            overflow: hidden;
-            transition: height 0.5s
-        }
-
         p {
             font-size: 14px;
             font-family: Verdana;
@@ -34,7 +29,7 @@ export class SelectionTab extends LitElement {
 
     render(){
         return html`
-        <div style="display: flex; flex-direction: column; justify-content: space-evenly; height: 100%;">
+        <div style="display: flex; flex-direction: column; justify-content: space-between; align-items: center; height: 100%; padding: 20px; box-sizing: border-box">
             <div style="display: flex; flex-direction: column;">
                 <petal-button
                     @click=${() => this._selectDelay(true)}

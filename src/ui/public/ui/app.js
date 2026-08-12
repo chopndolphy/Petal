@@ -13,36 +13,35 @@ class App extends LitElement {
     }
 
     static styles = css`
+        :host {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
         #wrapper {
-            margin: 10px 0 0 10px; /* your fixed top-left margin, untouched by scale */
-            width: fit-content;
-            height: fit-content;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
         }
 
         #divvy {
-            width: 850px;
-            height: 450px;
+            width: fit-content;
+            height: fit-content; // i jut changed this
+            transform-origin: center center;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
-            transform-origin: top left;
-            transform: scale(${ 0.875 }); 
-
-            -webkit-user-select: none; /* Safari */
-            -ms-user-select: none; /* IE 10 and IE 11 */
-            user-select: none; /* Standard syntax */
-
+            user-select: none;
         }
 
-        #effects {
-            background-color: #222222;
-            border-radius: 10px;
+        .window {
+            background-color: #212121;
+            border-radius: 5px;
         }
+        `;
 
-        #controls {
-            background-color: #222222;
-            border-radius: 10px;
-        }
-    `
     constructor(){
         super()
         this.isDisplayingDelay = true;
@@ -54,8 +53,9 @@ class App extends LitElement {
     connectedCallback() {
         super.connectedCallback();
         if (window.__JUCE__) {
-            window.__JUCE__.backend.addEventListener("windowWidth", (values) => {
-                this.scale = JSON.parse(values) / 950;
+            window.__JUCE__.backend.addEventListener("windowSize", (value) => {
+                const { width, height } = JSON.parse(value);
+                this.scale = Math.min(width / 950, height / 475);
             });
         }
     }
@@ -63,29 +63,32 @@ class App extends LitElement {
     render(){
         return html`
         <div id="wrapper">
-        <main id="divvy" style="transform-origin: top left; transform: scale(${ this.scale })">
+        <main id="divvy" style="transform: scale(${this.scale})">
             <div style="display: flex; flex-direction: row; align-items: center; gap: 10px; margin: 0px">
                 <!-- delay and reverb -->
-                <div id="effects" style="position: relative">
-                    <reverb-editor id="reverb" 
+                <div style="position: relative">
+                    <reverb-editor class="window" 
                         style="display: ${this.isDisplayingDelay ? 'none' : 'block'}; width: 450px; height: 450px">
                     </reverb-editor>
 
-                    <delay-editor id="delay" 
+                    <delay-editor class="window" 
                         style="display: ${this.isDisplayingDelay ? 'block' : 'none'}; width: 450px; height: 450px">
                     </delay-editor>
                 </div>
                 
                 <!-- controls -->
-                <div id="controls" style="position: relative; display: flex; flex-direction: row; width: 450px; height: 450px">
-                    <tap-editor id="tap" 
+                <div style="position: relative; display: flex; flex-direction: row; width: 375px; height: 450px">
+                    <tap-editor class="window" 
                         style="display: ${this.isDisplayingIO ? 'block' : 'none'}; width: 375px" 
                         .isPitch=${this.isDisplayingDelay} >
                     </tap-editor>
 
-                    <io-editor style="display: ${this.isDisplayingIO ? 'none' : 'block'}; width: 375px"></io-editor>
+                    <io-editor class="window" style="display: ${this.isDisplayingIO ? 'none' : 'block'}; width: 375px"></io-editor>
+                </div>
 
+                <div style="position: relative; display: flex; flex-direction: row; width: 75px; height: 450px">
                     <selection-tab
+                        class="window" 
                         .isDisplayingDelay=${this.isDisplayingDelay}
                         .isDisplayingIO=${this.isDisplayingIO}
                         @display-delay-change=${e => this.isDisplayingDelay = e.detail}
@@ -93,6 +96,7 @@ class App extends LitElement {
                         style="width: 75px; height: 450px">
                     </selection-tab>
                 </div>
+
             </div>
         </main>
         </div>

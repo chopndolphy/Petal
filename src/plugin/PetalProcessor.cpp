@@ -8,6 +8,10 @@ void PetalProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     dlR.setMaximumDelayInSamples(sampleRate * 10);
     dlL.reset();
     dlR.reset();
+    fbDlL.setMaximumDelayInSamples(sampleRate * 10);
+    fbDlR.setMaximumDelayInSamples(sampleRate * 10);
+    fbDlL.reset();
+    fbDlR.reset();
 
     duckEnv.reset(sampleRate, 1.0);
 
@@ -35,6 +39,7 @@ void PetalProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 
     filterL.prepareToPlay(sampleRate);
     filterR.prepareToPlay(sampleRate);
+    
 }
 
 void PetalProcessor::processBlock(juce::AudioBuffer<float> &buffer) noexcept
@@ -59,6 +64,8 @@ void PetalProcessor::processBlock(juce::AudioBuffer<float> &buffer) noexcept
 
         dlL.writeSample(inL);
         dlR.writeSample(inR);
+        float feedforwardL = 0.0f;
+        float feedforwardR = 0.0f;
 
         // replace the passed-through dry signal with the gain-staged version
         buffer.setSample(0, sample, dryL * dryGain);
@@ -73,6 +80,7 @@ void PetalProcessor::processBlock(juce::AudioBuffer<float> &buffer) noexcept
         if (modLFOPhase >= 1.0f) modLFOPhase -= 1.0f;
         const float modLFOValue = std::sin(2.0f * pi * modLFOPhase) * modLFODepthInSamples;
 
+        
         for (int tap = 0; tap < 8; tap++)
         {
             advancePhase(tap);
@@ -112,16 +120,32 @@ void PetalProcessor::processBlock(juce::AudioBuffer<float> &buffer) noexcept
                 pitchShiftedR += dlR.readSample(delayR) * window * tp[tap].gain.getNextValue();
             }
 
-            //   feedbackL = pitchShiftedL * feedbackAmt;
-            //   feedbackR = pitchShiftedR * feedbackAmt;
-
             pitchShiftedL *= duck;
             pitchShiftedR *= duck;
+
+            if (tap <= feedbackLen)
+            {
+                feedforwardL += pitchShiftedL * gain;
+                feedforwardR += pitchShiftedR * gain;
+            }
+
             buffer.addSample(0, sample, pitchShiftedL * gain * delayGain);
             buffer.addSample(1, sample, pitchShiftedR * gain * delayGain);
             rvbBuffer.addSample(0, sample, pitchShiftedL * gain * tp[tap].reverbAmount);
             rvbBuffer.addSample(1, sample, pitchShiftedR * gain * tp[tap].reverbAmount);
         }
+
+        float fbL = fbDlL.readSample(tp[feedbackLen].timeL.getNextValue());
+        float fbR = fbDlR.readSample(tp[feedbackLen].timeR.getNextValue());
+
+        feedbackL = fbL * feedbackAmt;
+        feedbackR = fbR * feedbackAmt;
+
+        fbDlL.writeSample(feedforwardL + feedbackL);
+        fbDlR.writeSample(feedforwardR + feedbackR);
+
+        buffer.addSample(0, sample, feedbackL);
+        buffer.addSample(1, sample, feedbackR); 
     }
 
     rvb.processBlock(rvbBuffer);
@@ -153,14 +177,12 @@ void PetalProcessor::setDelayTapTimes(float freeTimeLInMs, float freeTimeRInMs, 
     float timeLInSamples = (timeLInMs / 1000.0f) * sampleRate;
     float timeRInSamples = (timeRInMs / 1000.0f) * sampleRate;
 
-    float positionRInUse = stereoLock ? positionL : positionR;
-    float skewRInUse = stereoLock ? skewL : skewR;
+    float positionRInUse = stereoLock ? positionL / 100.0f : positionR / 100.0f;
+    float skewRInUse = stereoLock ? skewL / 100.0f : skewR / 100.0f;
 
     float exponentL = std::pow(2.0f, skewL * 5.0f);
     float exponentR = std::pow(2.0f, skewRInUse * 5.0f);
 
-    // Leave headroom in the delay line for the window size and correlation
-    // lookahead that processBlock adds on top of tp[tap].time{L,R}.
     const float maxTapTime = (float)dlL.getBufferLength() - (float)sampleRate * 0.5f;
 
     for (int tap = 0; tap < 8; tap++)
@@ -206,6 +228,10 @@ void PetalProcessor::setCharacterAttributes(float inputLevelInDB, float delayLev
 
     this->windowSizeInMilliseconds = windowSizeInMilliseconds;
     this->windowSizeInSamples = (sampleRate / 1000.0f) * windowSizeInMilliseconds;
+
+    // feedback
+    this->feedbackAmt = std::clamp(feedbackAmt / 100.0f, 0.0f, 0.985f);
+    this->feedbackLen = std::clamp(feedbackLen - 1, 0, 7);
 
     // mod LFO
     this->modLFOAngle = lfoRateInHz/sampleRate;

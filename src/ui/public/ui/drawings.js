@@ -45,7 +45,11 @@ export function drawLock(ctx, w, h, val) {
     ctx.arc(cx, h * 0.4 - unlocked, r, Math.PI, 0);
     ctx.lineTo(cx + r, cy - unlocked);
 
-    ctx.strokeStyle = color.pink;
+    const grad = ctx.createLinearGradient(w * 0.05, h / 2, w * 0.95, h / 2)
+    grad.addColorStop(0, color.pink);
+    grad.addColorStop(0.5, color.tan);
+    grad.addColorStop(1, color.orange);
+    ctx.strokeStyle = grad;
     ctx.lineWidth = w * 0.07;
     ctx.lineCap = "round";
     ctx.stroke();
@@ -587,11 +591,14 @@ export function drawFeedback(ctx, w, h, val = 0, aux = {}){
 
 export function drawSelectIO(ctx, w, h, val = 0) {
     const cx = w / 2, cy = h / 2, iconSize = w * 0.8;
+    const spacing = iconSize / 4;
+    const totalSpan = spacing * 3; // 4 lines, 3 gaps between them
+    const yStart = cy + totalSpan / 2; // topmost-value line, shifted down to center the group
 
     for (let i = 0; i < 4; i++) {
+        const x = { start: w * 0.1, end: w * 0.9, fader: w * 0.25 + w * 0.15 * i };
+        const y = yStart - spacing * i;
 
-        const x = { start: w * 0.1, end: w * 0.9, fader: w * 0.25 + w * 0.15 * i }
-        const y = cy - (iconSize / 4) * i;
         ctx.beginPath();
         ctx.moveTo(x.start, y);
         ctx.lineTo(x.end, y);

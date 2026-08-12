@@ -40,9 +40,10 @@ void PetalReverb::prepareToPlay(double sampleRate, int samplesPerBlock)
     modAngle2 = 0.01 / sampleRate;
 }
 
-void PetalReverb::setReverbAttributes(float outputLevel, float decayTimeInMs, float LPFreqInHz, float HPFreqInHz, float sizeScaling)
+void PetalReverb::setReverbAttributes(float levelInDb, float decayTimeInMs, float LPFreqInHz, float HPFreqInHz, float sizeScaling)
 {
-    level = outputLevel;
+    level = juce::Decibels::decibelsToGain(levelInDb, -72.0f);
+
     size = 1.0f + sizeScaling / 25.0f;
 
     // dampening one pole

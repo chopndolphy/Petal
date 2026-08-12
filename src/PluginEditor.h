@@ -40,6 +40,15 @@ private:
         delayLevelRelay{"delayLevel"},
         windowSizeRelay{"windowSize"},
 
+        filterCutoffRelay{"filterCutoff"},
+        filterQRelay{"filterQ"},
+        filterShapeRelay{"filterShape"},
+
+        delayDuckAmtRelay{"delayDuckAmt"},
+        delayDuckLenRelay{"delayDuckLen"},
+        lfoRateRelay{"lfoRate"},
+        lfoAmountRelay{"lfoAmount"},
+
         reverbSizeRelay{"reverbSize"},
         reverbDecayTimeRelay{"reverbDecayTime"},
         reverbLPFRelay{"reverbLPF"},
@@ -53,7 +62,7 @@ private:
     std::array<std::unique_ptr<juce::WebSliderRelay>, 8> tapShiftAmtRelays  = makeTapRelays ("tapShiftAmt");
     std::array<std::unique_ptr<juce::WebSliderRelay>, 8> tapReverbAmtRelays = makeTapRelays ("tapReverbAmt");
 
-    juce::WebBrowserComponent webview {
+    juce::WebBrowserComponent webview{
         [this]
         {
             auto options = juce::WebBrowserComponent::Options{}
@@ -72,6 +81,15 @@ private:
                                .withOptionsFrom(roundRelay)
                                .withOptionsFrom(delayLevelRelay)
                                .withOptionsFrom(windowSizeRelay)
+
+                               .withOptionsFrom(delayDuckAmtRelay)
+                               .withOptionsFrom(delayDuckLenRelay)
+                               .withOptionsFrom(filterCutoffRelay)
+                               .withOptionsFrom(filterQRelay)
+                               .withOptionsFrom(filterShapeRelay)
+                               .withOptionsFrom(lfoRateRelay)
+                               .withOptionsFrom(lfoAmountRelay)
+
                                .withOptionsFrom(reverbSizeRelay)
                                .withOptionsFrom(reverbDecayTimeRelay)
                                .withOptionsFrom(reverbLPFRelay)
@@ -122,6 +140,17 @@ private:
     WebSliderParameterAttachment roundAttachment { *audioProcessor.params->round->getRangedAudioParameter(), roundRelay, nullptr };
     WebSliderParameterAttachment windowSizeAttachment { *audioProcessor.params->windowSize->getRangedAudioParameter(), windowSizeRelay, nullptr };
     WebSliderParameterAttachment delayLevelAttachment{*audioProcessor.params->delayLevel->getRangedAudioParameter(), delayLevelRelay, nullptr};
+
+
+    WebSliderParameterAttachment filterCutoffAttachment{*audioProcessor.params->filterCutoff->getRangedAudioParameter(), filterCutoffRelay, nullptr};
+    WebSliderParameterAttachment filterQAttachment{*audioProcessor.params->filterQ->getRangedAudioParameter(), filterQRelay, nullptr};
+    WebSliderParameterAttachment filterShapeAttachment{*audioProcessor.params->filterShape->getRangedAudioParameter(), filterShapeRelay, nullptr};
+
+    WebSliderParameterAttachment delayDuckAmtAttachment{*audioProcessor.params->delayDuckAmt->getRangedAudioParameter(), delayDuckAmtRelay, nullptr};
+    WebSliderParameterAttachment delayDuckLenAttachment{*audioProcessor.params->delayDuckLen->getRangedAudioParameter(), delayDuckLenRelay, nullptr};
+
+    WebSliderParameterAttachment lfoRateAttachment{*audioProcessor.params->lfoRate->getRangedAudioParameter(), lfoRateRelay, nullptr};
+    WebSliderParameterAttachment lfoAmountAttachment{*audioProcessor.params->lfoAmount->getRangedAudioParameter(), lfoAmountRelay, nullptr};
 
     WebSliderParameterAttachment reverbSizeAttachment { *audioProcessor.params->reverbSize->getRangedAudioParameter(), reverbSizeRelay, nullptr };
     WebSliderParameterAttachment reverbDecayTimeAttachment { *audioProcessor.params->reverbDecayTime->getRangedAudioParameter(), reverbDecayTimeRelay, nullptr };

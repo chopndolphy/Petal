@@ -44,12 +44,9 @@ export class ReverbGraphic extends LitElement {
         resizeObserver.observe(this.container);
 
         const onSliderChange = () => {
-           // if (!this.geometry) return
             let decay = this.reverbDecaySlider.getNormalisedValue();
-            decay = decay * 2 + 1;
-
             let size = this.reverbSizeSlider.getNormalisedValue();
-            size = size * 0.75 + 0.25;
+            size = size * 0.625 + 0.125;
             
             this.displace(decay);
             this.mesh.material.opacity = size;
@@ -175,7 +172,7 @@ export class ReverbGraphic extends LitElement {
             const z = this.srcPos.getZ(i);
 
             const u = (x + width / 2) / width;
-            const falloffExp = amount * 1 + 1;
+            const falloffExp = amount + 1;
             const envelope = Math.pow(1 - u, falloffExp);
 
             const baseFreq = Math.PI * 2 * amount;

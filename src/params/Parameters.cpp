@@ -129,19 +129,19 @@ Parameters::createParameterLayout()
     // shaping
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "positionL", 1},
                                                            "Position L",
-                                                           juce::NormalisableRange<float> { 0.0f, 1.0f, 0.01 }, 1.0f));
+                                                           juce::NormalisableRange<float> { 0.0f, 100.0f, 0.01 }, 0.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"skewL", 1},
                                                            "Skew L",
-                                                           juce::NormalisableRange<float>{ -1.0f, 1.0f, 0.01}, 0.0f));
+                                                           juce::NormalisableRange<float>{ -100.0f, 100.0f, 0.01}, 0.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"positionR", 1},
                                                            "Position R",
-                                                           juce::NormalisableRange<float>{ 0.0f, 1.0f, 0.01}, 1.0f));
+                                                           juce::NormalisableRange<float>{ 0.0f, 100.0f, 0.01}, 0.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"skewR", 1},
                                                            "Skew R",
-                                                           juce::NormalisableRange<float>{ -1.0f, 1.0f, 0.01}, 0.0f));
+                                                           juce::NormalisableRange<float>{ -100.0f, 100.0f, 0.01}, 0.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"round", 1},
                                                            "Round",
@@ -149,11 +149,11 @@ Parameters::createParameterLayout()
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"feedbackAmt", 1},
                                                            "Feedback Amount",
-                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 25.0f));
+                                                           juce::NormalisableRange<float>{0.0f, 98.5f, 0.01}, 25.0f));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"feedbackLen", 1},
+    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID{"feedbackLen", 1},
                                                            "Feedback Tap Length",
-                                                           juce::NormalisableRange<float>{0.0f, 100.0f, 0.01}, 25.0f));
+                                                           1, 8, 8));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"delayLevel", 1},
                                                            "Delay Level",
@@ -175,15 +175,15 @@ Parameters::createParameterLayout()
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"reverbLPF", 1},
                                                            "Reverb LPF",
-                                                           juce::NormalisableRange<float>{50.0f, 18000.0f, 0.01, 4.0}, 12000.0f));
+                                                           juce::NormalisableRange<float>{50.0f, 18000.0f, 0.01, 0.25}, 12000.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"reverbHPF", 1},
                                                            "Reverb HPF",
-                                                           juce::NormalisableRange<float>{50.0f, 18000.0f, 0.01, 4.0}, 440.0f));
+                                                           juce::NormalisableRange<float>{50.0f, 18000.0f, 0.01, 0.25}, 440.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "reverbLevel", 1},
                                                            "Reverb Level",
-                                                           juce::NormalisableRange<float> { 0.0f, 1.0f, 0.01 }, 1.0f));
+                                                           juce::NormalisableRange<float> { -72.0f, 6.0f, 0.01 }, 0.0f));
 
     // delay ducking
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"delayDuckAmt", 1},
@@ -197,7 +197,7 @@ Parameters::createParameterLayout()
     // filter freq
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"filterCutoff", 1},
                                                            "Filter Cutoff",
-                                                           juce::NormalisableRange<float>{50.0f, 18000.0f, 0.01}, 12000.0f));
+                                                           juce::NormalisableRange<float>{50.0f, 18000.0f, 0.01, 0.25}, 12000.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"filterQ", 1},
                                                            "Filter Resonance",
@@ -210,7 +210,7 @@ Parameters::createParameterLayout()
     // lfo
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"lfoRate", 1},
                                                            "Mod LFO Rate",
-                                                           juce::NormalisableRange<float>{0.0f, 20.0f, 0.01}, 0.0f));
+                                                           juce::NormalisableRange<float>{0.0f, 20.0f, 0.01}, 5.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"lfoAmount", 1},
                                                            "Mod LFO Amount",

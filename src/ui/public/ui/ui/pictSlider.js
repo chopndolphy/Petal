@@ -177,9 +177,9 @@ export class PetalNumSlider extends PetalSliderBase {
             text-align: var(--numbox-align, left);
             color: var(--numbox-color, #aaaaaa);
             font-family: var(--numbox-font, "Verdana");
-            font-size: var(--numbox-font-size, 14px);
+            font-size: var(--numbox-font-size, 12px);
             width: var(--numbox-width, 75px);
-            height: var(--numbox-height, 15px);
+            height: var(--numbox-height, 13px);
             cursor: ns-resize;
         }
         input:focus {
@@ -300,6 +300,14 @@ export class PetalNumSlider extends PetalSliderBase {
     }
 
     parseNumeric(raw) {
+        const trimmed = raw.trim();
+        if (this.mode === "db") {
+            const bare = trimmed.replace(/\s*dB$/i, "").trim();
+            if (/^-inf(inity)?$/i.test(bare) || bare === "-∞") {
+                return this.min;
+            }
+        }
+
         const m = raw.trim().match(/^([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*([a-zA-Z%]*)$/);
         if (!m) return null;
 
@@ -319,6 +327,10 @@ export class PetalNumSlider extends PetalSliderBase {
         return num;
     }
 
+    isNegInf(value) {
+        return value <= this.min + 0.05;
+    }
+
     editString(norm) {
         const value = this.normToValue(norm);
         switch (this.mode) {
@@ -332,6 +344,8 @@ export class PetalNumSlider extends PetalSliderBase {
                 return String(Math.round(value)); // edit in bare ms
             case "rate":
                 return String(Math.round(value)); // edit in bare Hz
+            case "db":
+                return this.isNegInf(value) ? "-inf" : String(+value.toFixed(4));
             default:
                 return String(+value.toFixed(4));  // trims trailing zeros, drops suffix/%
         }
@@ -353,6 +367,8 @@ export class PetalNumSlider extends PetalSliderBase {
                 return `${value.toFixed(0)}%`;
             case "int":
                 return `${Math.floor(value) + this.suffix}`;
+            case "db":
+                return this.isNegInf(value) ? `-inf${this.suffix}` : value.toFixed(1) + this.suffix;
             default:
                 return value.toFixed(1) + this.suffix;
         }

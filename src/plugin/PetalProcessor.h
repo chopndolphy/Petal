@@ -72,7 +72,8 @@ private:
 
     bool feedbackSuppression = false;
     float feedbackAmt = 0.0f, feedbackL = 0.0f, feedbackR = 0.0f;
-    Delayline dlL, dlR;
+    int feedbackLen = 0;
+    Delayline dlL, dlR, fbDlL, fbDlR;
 
     Correlation cr;
     juce::SmoothedValue<float> duckEnv;
