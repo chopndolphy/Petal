@@ -56,6 +56,18 @@ apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
     dryLevel = std::make_unique<ParameterInstance>(audioProcessor, *this, "dryLevel");
 }
 
+void Parameters::registerInstance(ParameterInstance* instance)
+{
+    if (instance != nullptr)
+        instances.push_back(instance);
+}
+
+void Parameters::prepare(double sampleRate, int samplesPerBlock)
+{
+    for (auto* instance : instances)
+        instance->prepare(sampleRate, samplesPerBlock);
+}
+
 juce::AudioProcessorValueTreeState::ParameterLayout
 Parameters::createParameterLayout()
 {
@@ -224,6 +236,17 @@ ParameterInstance::ParameterInstance(PetalAudioProcessor& p, Parameters& pm, juc
             rangedParam->addListener(this);
         }
     }
+
+    param.registerInstance(this);
+}
+
+void ParameterInstance::prepare(double sampleRate, int samplesPerBlock) noexcept
+{
+    const auto blocksPerRamp = (int) std::ceil((smoothingTimeSeconds * sampleRate)
+                                               / (double) juce::jmax(1, samplesPerBlock));
+
+    smoothed.reset(juce::jmax(1, blocksPerRamp));
+    smoothed.setCurrentAndTargetValue(get());
 }
 
 void ParameterInstance::parameterValueChanged (int /*maybe unused*/, float newValue)
