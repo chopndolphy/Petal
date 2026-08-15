@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
 
+if(NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS deployment target" FORCE)
+endif()
+
 project(Petal VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 20)

@@ -101,8 +101,7 @@ bool PetalAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
     juce::ignoreUnused (layouts);
     return true;
   #else
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
    #if ! JucePlugin_IsSynth
