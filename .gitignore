@@ -10,9 +10,15 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
-/build
-/resource
+build/
+resource/
 
 # UI bundling
 src/ui/node_modules
 src/ui/dist
+
+# Apple Filesystem BS
+.DS_Store
+
+# VS Code
+.vscode
