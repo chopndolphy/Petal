@@ -53,7 +53,7 @@ public:
 
     void setCoefficients(float cf, float q)
     {
-        g = math.tan(M_PI * cf / sampleRate);
+        g = juce::dsp::FastMathApproximations::tan(juce::MathConstants<float>::pi * cf / static_cast<float>(sampleRate));
         k = 1.0f / std::max(q, 0.001f);
         a1 = 1.0f / (1.0f + g * (g + k));
         a2 = g * a1;
@@ -114,5 +114,4 @@ public:
 private:
     double sampleRate = 48000.0;
     float g = 0.0f, k = 0.0f, a1 = 0.0f, a2 = 0.0f, a3 = 0.0f, z1 = 0.0f, z2 = 0.0f;
-    juce::dsp::FastMathApproximations math;
 };
