@@ -40,7 +40,6 @@ public:
         round,
 
         windowSize,
-        windowJitter,
 
         lfoRate,
         lfoAmount,
