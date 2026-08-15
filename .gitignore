@@ -19,3 +19,6 @@ src/ui/dist
 
 # Apple Filesystem BS
 .DS_Store
+
+# VS Code
+.vscode
