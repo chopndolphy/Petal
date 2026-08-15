@@ -16,3 +16,6 @@ CMakeUserPresets.json
 # UI bundling
 src/ui/node_modules
 src/ui/dist
+
+# Apple Filesystem BS
+.DS_Store
