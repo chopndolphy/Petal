@@ -231,7 +231,14 @@ PetalAudioProcessorEditor::PetalAudioProcessorEditor(PetalAudioProcessor &p)
 
 PetalAudioProcessorEditor::~PetalAudioProcessorEditor()
 {
-
+    // Stop the timer before any members are torn down. The base juce::Timer destructor
+    // only runs after this class's members are already gone, and destroying the
+    // WebView2-backed browser component pumps the message loop - which can dispatch a
+    // queued timerCallback() against a half-destroyed webview. The nullptr check in
+    // timerCallback() doesn't help: the unique_ptr still holds a non-null pointer while
+    // ~WebBrowserComponent is running.
+    stopTimer();
+    webview.reset();
 }
 
 //==============================================================================
