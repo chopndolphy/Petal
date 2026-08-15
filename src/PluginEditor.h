@@ -62,68 +62,18 @@ private:
     std::array<std::unique_ptr<juce::WebSliderRelay>, 8> tapShiftAmtRelays  = makeTapRelays ("tapShiftAmt");
     std::array<std::unique_ptr<juce::WebSliderRelay>, 8> tapReverbAmtRelays = makeTapRelays ("tapReverbAmt");
 
-    juce::WebBrowserComponent webview{
-        [this]
-        {
-            auto options = juce::WebBrowserComponent::Options{}
-                               .withOptionsFrom(inputLevelRelay)
-                               .withOptionsFrom(freeTimeLRelay)
-                               .withOptionsFrom(freeTimeRRelay)
-                               .withOptionsFrom(syncTimeLRelay)
-                               .withOptionsFrom(syncTimeRRelay)
-                               .withOptionsFrom(isSyncLRelay)
-                               .withOptionsFrom(isSyncRRelay)
-                               .withOptionsFrom(stereoLockRelay)
-                               .withOptionsFrom(positionLRelay)
-                               .withOptionsFrom(skewLRelay)
-                               .withOptionsFrom(positionRRelay)
-                               .withOptionsFrom(skewRRelay)
-                               .withOptionsFrom(roundRelay)
-                               .withOptionsFrom(delayLevelRelay)
-                               .withOptionsFrom(windowSizeRelay)
+    // On Windows, WebBrowserComponent requires the WebView2 Runtime to be installed on the
+    // target machine; JUCE has no built-in way to bundle it. Users here just copy the .vst3
+    // in (no installer step to hook a WebView2 bootstrapper into), so rather than crash when
+    // the runtime is missing, we detect its absence up front and fall back to a plain message.
+    static bool isWebView2RuntimeAvailable();
+    juce::WebBrowserComponent::Options buildWebviewOptions();
 
-                               .withOptionsFrom(feedbackAmtRelay)
-                               .withOptionsFrom(feedbackLenRelay)
-
-                               .withOptionsFrom(filterCutoffRelay)
-                               .withOptionsFrom(filterShapeRelay)
-                               .withOptionsFrom(lfoRateRelay)
-                               .withOptionsFrom(lfoAmountRelay)
-
-                               .withOptionsFrom(reverbSizeRelay)
-                               .withOptionsFrom(reverbDecayTimeRelay)
-                               .withOptionsFrom(reverbLPFRelay)
-                               .withOptionsFrom(reverbHPFRelay)
-                               .withOptionsFrom(reverbLevelRelay)
-                               .withOptionsFrom(dryLevelRelay);
-
-            for (auto &relay : tapStateRelays)
-                options = options.withOptionsFrom(*relay);
-            for (auto& relay : tapShiftAmtRelays)
-                options = options.withOptionsFrom(*relay);
-            for (auto& relay : tapReverbAmtRelays)
-                options = options.withOptionsFrom(*relay);
-
-            options = options.withNativeFunction("attemptSave", [this](auto &var, auto completion)
-            {
-                juce::MessageManager::callAsync([this] { audioProcessor.presets->attemptSave(); });
-                completion(juce::var()); 
-            });
-
-            options = options.withNativeFunction("getAllPreset", [this](auto &var, auto completion)
-            {
-                completion(audioProcessor.presets->getAllPresetAsVar()); 
-            });
-
-            options = options.withNativeFunction("loadPreset", [this](auto &var, auto completion)
-            {
-                audioProcessor.presets->loadPreset(var[0].toString());
-                completion(juce::var());
-            });
-
-            return options.withResourceProvider([this](const auto &url)
-                                                { return getResource(url); });
-        }()};
+    std::unique_ptr<juce::WebBrowserComponent> webview;
+    juce::Label webViewUnavailableLabel;
+    juce::HyperlinkButton webViewDownloadLink{
+        "Download WebView2 Runtime",
+        juce::URL("https://go.microsoft.com/fwlink/p/?LinkId=2124703")};
 
     WebSliderParameterAttachment inputLevelAttachment { *audioProcessor.params->inputLevel->getRangedAudioParameter(), inputLevelRelay, nullptr };
     WebSliderParameterAttachment freeTimeLAttachment { *audioProcessor.params->freeTimeL->getRangedAudioParameter(), freeTimeLRelay, nullptr };

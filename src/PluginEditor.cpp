@@ -4,6 +4,10 @@
 #include "PluginEditor.h"
 #include "BinaryData.h"
 
+#if JUCE_WINDOWS
+ #include <WebView2.h>
+#endif
+
 //==============================================================================
 
 namespace {
@@ -44,16 +48,110 @@ std::array<std::unique_ptr<juce::WebSliderRelay>, 8> PetalAudioProcessorEditor::
     return relays;
 }
 
+bool PetalAudioProcessorEditor::isWebView2RuntimeAvailable()
+{
+#if JUCE_WINDOWS
+    LPWSTR versionInfo = nullptr;
+    const auto hr = GetAvailableCoreWebView2BrowserVersionString(nullptr, &versionInfo);
+    const bool available = SUCCEEDED(hr) && versionInfo != nullptr;
+
+    if (versionInfo != nullptr)
+        CoTaskMemFree(versionInfo);
+
+    return available;
+#else
+    return true;
+#endif
+}
+
+juce::WebBrowserComponent::Options PetalAudioProcessorEditor::buildWebviewOptions()
+{
+    auto options = juce::WebBrowserComponent::Options{}
+                       .withOptionsFrom(inputLevelRelay)
+                       .withOptionsFrom(freeTimeLRelay)
+                       .withOptionsFrom(freeTimeRRelay)
+                       .withOptionsFrom(syncTimeLRelay)
+                       .withOptionsFrom(syncTimeRRelay)
+                       .withOptionsFrom(isSyncLRelay)
+                       .withOptionsFrom(isSyncRRelay)
+                       .withOptionsFrom(stereoLockRelay)
+                       .withOptionsFrom(positionLRelay)
+                       .withOptionsFrom(skewLRelay)
+                       .withOptionsFrom(positionRRelay)
+                       .withOptionsFrom(skewRRelay)
+                       .withOptionsFrom(roundRelay)
+                       .withOptionsFrom(delayLevelRelay)
+                       .withOptionsFrom(windowSizeRelay)
+
+                       .withOptionsFrom(feedbackAmtRelay)
+                       .withOptionsFrom(feedbackLenRelay)
+
+                       .withOptionsFrom(filterCutoffRelay)
+                       .withOptionsFrom(filterShapeRelay)
+                       .withOptionsFrom(lfoRateRelay)
+                       .withOptionsFrom(lfoAmountRelay)
+
+                       .withOptionsFrom(reverbSizeRelay)
+                       .withOptionsFrom(reverbDecayTimeRelay)
+                       .withOptionsFrom(reverbLPFRelay)
+                       .withOptionsFrom(reverbHPFRelay)
+                       .withOptionsFrom(reverbLevelRelay)
+                       .withOptionsFrom(dryLevelRelay);
+
+    for (auto &relay : tapStateRelays)
+        options = options.withOptionsFrom(*relay);
+    for (auto& relay : tapShiftAmtRelays)
+        options = options.withOptionsFrom(*relay);
+    for (auto& relay : tapReverbAmtRelays)
+        options = options.withOptionsFrom(*relay);
+
+    options = options.withNativeFunction("attemptSave", [this](auto &var, auto completion)
+    {
+        juce::MessageManager::callAsync([this] { audioProcessor.presets->attemptSave(); });
+        completion(juce::var());
+    });
+
+    options = options.withNativeFunction("getAllPreset", [this](auto &var, auto completion)
+    {
+        completion(audioProcessor.presets->getAllPresetAsVar());
+    });
+
+    options = options.withNativeFunction("loadPreset", [this](auto &var, auto completion)
+    {
+        audioProcessor.presets->loadPreset(var[0].toString());
+        completion(juce::var());
+    });
+
+    return options.withResourceProvider([this](const auto &url)
+                                        { return getResource(url); });
+}
+
 PetalAudioProcessorEditor::PetalAudioProcessorEditor(PetalAudioProcessor &p)
     : AudioProcessorEditor(&p), audioProcessor(p)
 {
-    addAndMakeVisible(webview);
+    if (isWebView2RuntimeAvailable())
+    {
+        webview = std::make_unique<juce::WebBrowserComponent>(buildWebviewOptions());
+        addAndMakeVisible(*webview);
 
-#if JUCE_DEBUG
-    webview.goToURL("http://localhost:4000");
-#else
-    webview.goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
-#endif
+    #if JUCE_DEBUG
+        webview->goToURL("http://localhost:4000");
+    #else
+        webview->goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
+    #endif
+    }
+    else
+    {
+        webViewUnavailableLabel.setText(
+            "Petal's interface requires the Microsoft Edge WebView2 Runtime, "
+            "which isn't installed on this computer.",
+            juce::dontSendNotification);
+        webViewUnavailableLabel.setJustificationType(juce::Justification::centred);
+        webViewUnavailableLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+        addAndMakeVisible(webViewUnavailableLabel);
+        addAndMakeVisible(webViewDownloadLink);
+    }
+
     const int width = 950;
     setResizable(true, false);
     setResizeLimits((int)width * 0.75f, (int)width * 0.75f / 2, (int)width, (int)width / 2);
@@ -128,12 +226,22 @@ void PetalAudioProcessorEditor::paint (juce::Graphics& g)
 void PetalAudioProcessorEditor::resized()
 {
     const auto webviewBounds = getLocalBounds();
-    webview.setBounds(webviewBounds);
 
-    auto *windowSize = new juce::DynamicObject();
-    windowSize->setProperty("width", webviewBounds.getWidth());
-    windowSize->setProperty("height", webviewBounds.getHeight());
-    webview.emitEventIfBrowserIsVisible("windowSize", juce::JSON::toString(juce::var(windowSize)));
+    if (webview != nullptr)
+    {
+        webview->setBounds(webviewBounds);
+
+        auto *windowSize = new juce::DynamicObject();
+        windowSize->setProperty("width", webviewBounds.getWidth());
+        windowSize->setProperty("height", webviewBounds.getHeight());
+        webview->emitEventIfBrowserIsVisible("windowSize", juce::JSON::toString(juce::var(windowSize)));
+    }
+    else
+    {
+        auto bounds = webviewBounds.reduced(20);
+        webViewUnavailableLabel.setBounds(bounds.removeFromTop(bounds.getHeight() / 2));
+        webViewDownloadLink.setBounds(bounds.removeFromTop(24));
+    }
 
     if (resizer != nullptr)
         resizer->setBounds(getLocalBounds());
@@ -169,6 +277,9 @@ auto PetalAudioProcessorEditor::getResource(const juce::String& url) -> std::opt
 
 void PetalAudioProcessorEditor::timerCallback()
 {
+    if (webview == nullptr)
+        return;
+
     juce::var delayTimesL{juce::Array<juce::var>()};
     juce::var delayTimesR{juce::Array<juce::var>()};
     juce::var amplitudesL{juce::Array<juce::var>()};
@@ -185,10 +296,10 @@ void PetalAudioProcessorEditor::timerCallback()
     }
     reverbLevelMsr = audioProcessor.petal.rvb.reverbLevelMsr.load();
 
-    webview.emitEventIfBrowserIsVisible("delayTimesL", juce::JSON::toString(delayTimesL));
-    webview.emitEventIfBrowserIsVisible("delayTimesR", juce::JSON::toString(delayTimesR));
-    webview.emitEventIfBrowserIsVisible("amplitudesL", juce::JSON::toString(amplitudesL));
-    webview.emitEventIfBrowserIsVisible("amplitudesR", juce::JSON::toString(amplitudesR));
-    webview.emitEventIfBrowserIsVisible("reverbLevelMsr", juce::JSON::toString(reverbLevelMsr));
-    webview.emitEventIfBrowserIsVisible("tapStates", juce::JSON::toString(tapStates));
+    webview->emitEventIfBrowserIsVisible("delayTimesL", juce::JSON::toString(delayTimesL));
+    webview->emitEventIfBrowserIsVisible("delayTimesR", juce::JSON::toString(delayTimesR));
+    webview->emitEventIfBrowserIsVisible("amplitudesL", juce::JSON::toString(amplitudesL));
+    webview->emitEventIfBrowserIsVisible("amplitudesR", juce::JSON::toString(amplitudesR));
+    webview->emitEventIfBrowserIsVisible("reverbLevelMsr", juce::JSON::toString(reverbLevelMsr));
+    webview->emitEventIfBrowserIsVisible("tapStates", juce::JSON::toString(tapStates));
 }
