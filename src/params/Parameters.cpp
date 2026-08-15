@@ -236,33 +236,22 @@ void ParameterInstance::parameterValueChanged (int /*maybe unused*/, float newVa
 
 void ParameterInstance::handleAsyncUpdate()
 {
-    if (rangedParam)
-    {
-        float newValue = cachedValue.load(std::memory_order_relaxed);
-        
-        if (auto* parameter = dynamic_cast<juce::AudioProcessorParameterWithID*>(param.apvts.getParameter(paramID)))
-        {
-            if (auto* rangedParam = dynamic_cast<juce::RangedAudioParameter*>(parameter))
-            {
-                valueSafe = rangedParam->convertFrom0to1(newValue);
-            }
-        }
-    }
+    if (rangedParam == nullptr)
+        return;
+
+    valueSafe = rangedParam->convertFrom0to1(cachedValue.load(std::memory_order_relaxed));
 }
 
 void ParameterInstance::triggerUpdate()
 {
-    if (rangedParam)
-    {
-        float newValue = cachedValue.load(std::memory_order_relaxed);
-        if (auto* parameter = dynamic_cast<juce::AudioProcessorParameterWithID*>(param.apvts.getParameter(paramID)))
-        {
-            if (auto* rangedParam = dynamic_cast<juce::RangedAudioParameter*>(parameter))
-            {
-                value.store(rangedParam->convertFrom0to1(newValue));
-            }
-        }
-    }
+    if (rangedParam == nullptr)
+        return;
+
+    // Uses the pointer cached in the constructor rather than looking the parameter up
+    // by string ID: hosts may call parameterValueChanged() on the audio thread, where
+    // a keyed lookup and dynamic_cast are not real-time safe. Both resolve to the same
+    // object the constructor already found.
+    value.store(rangedParam->convertFrom0to1(cachedValue.load(std::memory_order_relaxed)));
 }
 
 float ParameterInstance::get() const noexcept
