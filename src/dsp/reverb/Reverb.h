@@ -22,11 +22,8 @@ private:
     APF difAp1, difAp2, difAp3, difAp4,
     modAp1, modAp2, modAp3, modAp4;
 
-    double modPhase1 = 0.0, 
-    modAngle1 = 0.0, 
-    modPhase2 = 0.0, 
+    double modPhase1 = 0.0,
+    modAngle1 = 0.0,
+    modPhase2 = 0.0,
     modAngle2 = 0.0;
-
-    float duckAmount = 0.0f;
-    juce::SmoothedValue<float> duckingEnv;
 };

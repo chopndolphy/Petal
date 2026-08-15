@@ -82,8 +82,11 @@ export class ReverbGraphic extends LitElement {
         this.scene = new THREE.Scene();
 
         const r = 4;
-        this.camera = new THREE.OrthographicCamera(-2, 2, 2.5, -2.5); 
-        this.camera.position.set(r * -0.5, r * -0.5, r * 0.7);
+        const aspect = this.width / this.height;
+        const halfHeight = 1.5;
+        const halfWidth = halfHeight * aspect;
+        this.camera = new THREE.OrthographicCamera(-halfWidth, halfWidth, halfHeight, -halfHeight); 
+        this.camera.position.set(r * -0.5, r * -0.35, r * 0.7);
         this.camera.lookAt(0, 0, 0);
 
         const grid = this.makeGridLines(3, 1.5, 15, 10);
@@ -106,8 +109,9 @@ export class ReverbGraphic extends LitElement {
             map: texture
         });
         this.mesh = new THREE.Mesh(this.geometry, material);
-        this.mesh.renderOrder = 0; // add
+        this.mesh.renderOrder = 0; 
         this.mesh.rotation.x = -Math.PI / 2;
+        this.mesh.position.y = -0.25
         this.displace(0)
         this.scene.add(this.mesh);
 
@@ -161,7 +165,7 @@ export class ReverbGraphic extends LitElement {
          }));
     }
 
-    displace(amount = 0) {
+    displace(amount = 1) {
         const width = this.geometry.parameters.width;
         const colorAttr = this.geometry.attributes.color;
         const vertexColor = new THREE.Color();
@@ -177,7 +181,7 @@ export class ReverbGraphic extends LitElement {
 
             const baseFreq = Math.PI * 2 * amount;
             const wave = Math.cos(baseFreq * (1 - envelope) + Math.PI * 2 * x);
-            const height = wave * wave;
+            const height = (wave * wave) * 0.5;
             const amplitude = height * envelope;
 
             this.pos.setXYZ(i, x, y, z + amplitude);

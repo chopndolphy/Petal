@@ -80,6 +80,9 @@ PetalAudioProcessorEditor::PetalAudioProcessorEditor(PetalAudioProcessor &p)
     skewRAttachment.sendInitialUpdate();
     roundAttachment.sendInitialUpdate();
 
+    feedbackAmtAttachment.sendInitialUpdate();
+    feedbackLenAttachment.sendInitialUpdate();
+
     windowSizeAttachment.sendInitialUpdate();
     delayLevelAttachment.sendInitialUpdate();
 
@@ -125,7 +128,7 @@ void PetalAudioProcessorEditor::paint (juce::Graphics& g)
 void PetalAudioProcessorEditor::resized()
 {
     const auto webviewBounds = getLocalBounds();
-    webview.setBounds(0, 0, webviewBounds.getWidth() - 5, webviewBounds.getHeight() - 5);
+    webview.setBounds(webviewBounds);
 
     auto *windowSize = new juce::DynamicObject();
     windowSize->setProperty("width", webviewBounds.getWidth());

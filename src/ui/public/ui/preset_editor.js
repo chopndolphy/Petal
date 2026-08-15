@@ -11,13 +11,13 @@ export class PresetEditor extends LitElement {
 
         label {
             margin: 0;
-            font-size: 14px;
+            font-size: 12px;
             font-family: Verdana;
             color: #696969;
         }
 
         button {
-            font-size: 14px;
+            font-size: 12px;
             font-family: Verdana;
             color: #696969;
             background-color: transparent;
@@ -26,7 +26,7 @@ export class PresetEditor extends LitElement {
         }
 
         select {
-            font-size: 14px;
+            font-size: 12px;
             font-family: Verdana;
             color: #696969;
             background-color: transparent;

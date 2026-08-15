@@ -14,7 +14,7 @@ export class ReverbEditor extends LitElement {
 
         label {
             margin: 0px;
-            font-size: 14px;
+            font-size: 12px;
             font-family: Verdana;
             color: #696969;
         }
@@ -27,12 +27,18 @@ export class ReverbEditor extends LitElement {
     firstUpdated(){
         this.reverbLPF = getSliderState("reverbLPF");
         this.reverbHPF = getSliderState("reverbHPF");
-
         this.redrawTone = this.redrawTone.bind(this);
-
         this.canvas = this.renderRoot.querySelector('#reverbTone');
+
+        const dpr = window.devicePixelRatio || 1;
+        const cs = getComputedStyle(this.canvas);
+        this.canvas.width = Math.round((parseFloat(cs.width) || this.canvas.clientWidth) * dpr);
+        this.canvas.height = Math.round((parseFloat(cs.height) || this.canvas.clientHeight) * dpr);
+        this.redrawTone();
+
         this.resizeObserver = new ResizeObserver((entries) => {
             const { width, height } = entries[0].contentRect;
+            if (width === 0 || height === 0) return;
             const dpr = window.devicePixelRatio || 1;
             this.canvas.width = Math.round(width * dpr);
             this.canvas.height = Math.round(height * dpr);
@@ -77,7 +83,6 @@ export class ReverbEditor extends LitElement {
                         suffix=" %"
                         style="--numbox-color:  ${ color.lightgrey };
                         --numbox-width: 100px;
-                        --numbox-font-size: 14px;
                         --numbox-align: center">
                     </petal-num-slider>
                 </div>
@@ -94,7 +99,6 @@ export class ReverbEditor extends LitElement {
                         suffix=" %"
                         style="--numbox-color: ${ color.lightgrey };
                         --numbox-width: 100px;
-                        --numbox-font-size: 14px;
                         --numbox-align: center">
                     </petal-num-slider>
                 </div>
@@ -109,15 +113,15 @@ export class ReverbEditor extends LitElement {
                     <petal-num-slider juceID="reverbLPF" suffix=" Hz" mode="rate"
                         style="--numbox-color:  ${ color.lightgrey };
                         --numbox-width: 80px;
-                        --numbox-font-size: 14px;
-                        --numbox-align: right">
+                        --numbox-align: right;
+                        --text-align: right">
                     </petal-num-slider>
 
                     <petal-num-slider juceID="reverbHPF" suffix=" Hz" mode="rate"
                         style="--numbox-color:  ${ color.lightgrey };
                         --numbox-width: 80px;
-                        --numbox-font-size: 14px;
-                        --numbox-align: left">
+                        --numbox-align: right
+                        --text-align: right">
                     </petal-num-slider>
 
                     </div>

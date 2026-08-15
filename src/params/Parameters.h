@@ -42,14 +42,10 @@ public:
         windowSize,
         windowJitter,
 
-        delayDuckAmt,
-        delayDuckLen,
-
         lfoRate,
         lfoAmount,
 
         filterCutoff,
-        filterQ,
         filterShape,
 
         reverbDecayTime,

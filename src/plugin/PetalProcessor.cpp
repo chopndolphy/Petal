@@ -13,8 +13,6 @@ void PetalProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     fbDlL.reset();
     fbDlR.reset();
 
-    duckEnv.reset(sampleRate, 1.0);
-
     rvb.prepareToPlay(sampleRate, samplesPerBlock);
     rvbBuffer.setSize(2, samplesPerBlock, false, false, true);
 
@@ -71,10 +69,6 @@ void PetalProcessor::processBlock(juce::AudioBuffer<float> &buffer) noexcept
         buffer.setSample(0, sample, dryL * dryGain);
         buffer.setSample(1, sample, dryR * dryGain);
 
-        // set ducking env follower
-        duckEnv.setTargetValue(std::abs((inL + inR)/2));
-        float duck = 1.0f - (duckEnv.getNextValue() * duckAmt);
-        
         // set mod LFO
         modLFOPhase += modLFOAngle;
         if (modLFOPhase >= 1.0f) modLFOPhase -= 1.0f;
@@ -120,9 +114,6 @@ void PetalProcessor::processBlock(juce::AudioBuffer<float> &buffer) noexcept
                 pitchShiftedR += dlR.readSample(delayR) * window * tp[tap].gain.getNextValue();
             }
 
-            pitchShiftedL *= duck;
-            pitchShiftedR *= duck;
-
             if (tap <= feedbackLen)
             {
                 feedforwardL += pitchShiftedL * gain;
@@ -144,8 +135,8 @@ void PetalProcessor::processBlock(juce::AudioBuffer<float> &buffer) noexcept
         fbDlL.writeSample(feedforwardL + feedbackL);
         fbDlR.writeSample(feedforwardR + feedbackR);
 
-        buffer.addSample(0, sample, feedbackL);
-        buffer.addSample(1, sample, feedbackR); 
+        buffer.addSample(0, sample, feedbackL * delayGain);
+        buffer.addSample(1, sample, feedbackR * delayGain);
     }
 
     rvb.processBlock(rvbBuffer);
@@ -180,7 +171,7 @@ void PetalProcessor::setDelayTapTimes(float freeTimeLInMs, float freeTimeRInMs, 
     float positionRInUse = stereoLock ? positionL / 100.0f : positionR / 100.0f;
     float skewRInUse = stereoLock ? skewL / 100.0f : skewR / 100.0f;
 
-    float exponentL = std::pow(2.0f, skewL * 5.0f);
+    float exponentL = std::pow(2.0f, (skewL / 100.0f) * 5.0f);
     float exponentR = std::pow(2.0f, skewRInUse * 5.0f);
 
     const float maxTapTime = (float)dlL.getBufferLength() - (float)sampleRate * 0.5f;
@@ -188,7 +179,7 @@ void PetalProcessor::setDelayTapTimes(float freeTimeLInMs, float freeTimeRInMs, 
     for (int tap = 0; tap < 8; tap++)
     {
         float basePos = (1.0f / 8.0f) * (tap + 1.0f);
-        float warpedL = warpTapPosition(basePos, positionL, exponentL, round);
+        float warpedL = warpTapPosition(basePos, positionL / 100.0f, exponentL, round);
         float warpedR = warpTapPosition(basePos, positionRInUse, exponentR, round);
         delayTimesL[tap].store(warpedL);
         delayTimesR[tap].store(warpedR);
@@ -214,13 +205,12 @@ void PetalProcessor::setDelayTapAttributes(int tap, bool state, int shiftAmountI
     tapStates[tap].store(state);
     
     tp[tap].shiftAmount = shiftAmount;
-    tp[tap].reverbAmount = reverbAmount;
+    tp[tap].reverbAmount = reverbAmount / 100.0f;
 }
 
 void PetalProcessor::setCharacterAttributes(float inputLevelInDB, float delayLevelInDB, float dryLevelInDB, float feedbackAmt, int feedbackLen, int windowSizeInMilliseconds,
                                             float lfoRateInHz, float lfoAmount,
-                                            float filterFreqInHz, float filterRes, float filterShape,
-                                            float setDuckingAmount, float duckTimeInMs)
+                                            float filterFreqInHz, float filterShape)
 {
     inputGain = juce::Decibels::decibelsToGain(inputLevelInDB, -72.0f);
     delayGain = juce::Decibels::decibelsToGain(delayLevelInDB, -72.0f);
@@ -238,14 +228,8 @@ void PetalProcessor::setCharacterAttributes(float inputLevelInDB, float delayLev
     this->modLFODepthInSamples = (lfoAmount / 100.0f) * (maxModLFODepthInMs / 1000.0f) * (float)sampleRate;
 
     // filtering
-    float resonance = std::clamp(filterRes / 100.0f, 0.0f, 0.985f);
     float cutoffFreq = std::clamp(filterFreqInHz, 20.0f, (float)sampleRate * 0.485f);
-    this->filterL.setCoefficients(cutoffFreq, resonance);
-    this->filterR.setCoefficients(cutoffFreq, resonance);
+    this->filterL.setCoefficients(cutoffFreq, 0.707f);
+    this->filterR.setCoefficients(cutoffFreq, 0.707f);
     this->filterShape = filterShape/100.0f;
-
-    // ducking
-    this->duckAmt = setDuckingAmount / 100.0f;
-    this->duckLen = duckTimeInMs / 100.0f;
-    duckEnv.reset(sampleRate, duckLen);
 }

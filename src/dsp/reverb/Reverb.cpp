@@ -69,7 +69,6 @@ void PetalReverb::processBlock(juce::AudioBuffer<float> &buffer) noexcept
     {
         float x = (dataL[sample] + dataR[sample]) * 0.5f;
         float diffusion = difAp4.processSample(difAp3.processSample(difAp2.processSample(difAp1.processSample(x))));
-        duckingEnv.setTargetValue(x);
 
         // calculate modulation
         float lfo1 = std::abs(modPhase1 - 0.5f) * 4.0 - 1; // polarity
@@ -104,11 +103,10 @@ void PetalReverb::processBlock(juce::AudioBuffer<float> &buffer) noexcept
         if (modPhase2 >= 1.0)
             modPhase2 -= 1.0;
 
-        // write to outgoing buffer
         float outL = highPassL * level;
         float outR = highPassR * level;
-        buffer.addSample(0, sample, outL);
-        buffer.addSample(1, sample, outR);
+        buffer.setSample(0, sample, outL);
+        buffer.setSample(1, sample, outR);
 
         // measurement to atomic
         reverbLevelMsr.store((outL + outR) / 2);

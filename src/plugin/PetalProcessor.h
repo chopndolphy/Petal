@@ -22,8 +22,7 @@ public:
     void setBPM(juce::AudioPlayHead *playhead);
     void setCharacterAttributes(float inputLevelInDB, float delayLevelInDB, float dryLevelInDB, float feedbackAmt, int feedbackLen, int windowSizeInMilliseconds,
                                 float lfoRateInHz, float lfoAmount,
-                                float filterFreqInHz, float filterRes, float filterShape,
-                                float setDuckingAmount, float duckTimeInMs);
+                                float filterFreqInHz, float filterShape);
 
         std::array<std::atomic<float>, 8> amplitudesL,
         amplitudesR, delayTimesL, delayTimesR, tapStates;
@@ -76,9 +75,7 @@ private:
     Delayline dlL, dlR, fbDlL, fbDlR;
 
     Correlation cr;
-    juce::SmoothedValue<float> duckEnv;
-    float duckAmt = 0.0f, duckLen = 0.0f;
-    
+
     float filterShape = 0.0f;
     SVF filterL, filterR;
     float modLFOPhase = 0.0f, modLFOAngle = 0.0f, modLFODepthInSamples = 0.0f;

@@ -17,7 +17,8 @@ FetchContent_MakeAvailable(JUCE)
 
 # Plugin configuration
 juce_add_plugin(Petal
-    COMPANY_NAME "rainbowcircuit"
+    COMPANY_NAME "Rainbow Circuit"
+    BUNDLE_ID "com.rainbowcircuit.Petal"
     PRODUCT_NAME "Petal"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE

@@ -56,8 +56,6 @@ export class DelayGraphic extends LitElement {
             }
         });
         resizeObserver.observe(this.container);
-
-        // initialize attachment sliders to JUCE
         this.positionLSlider = getSliderState("positionL");
         this.skewLSlider = getSliderState("skewL");
         this.positionRSlider = getSliderState("positionR");
@@ -79,6 +77,16 @@ export class DelayGraphic extends LitElement {
         this.sx = new Smoothening(0.05, 0);
         this.sy = new Smoothening(0.05, 0);
         this.sz = new Smoothening(0.05, r);
+        this.sCamera = new Smoothening(0.05, 1.15);
+
+        this.setCameraFrustum = (frustum) => {
+            this.camera.left = -frustum;
+            this.camera.right = frustum;
+            this.camera.top = -frustum;
+            this.camera.bottom = frustum;
+            this.camera.updateProjectionMatrix();
+        }
+
         this.camera.position.set(0, 0, r);
         this.camera.lookAt(0, 0, 0);
         this.renderer.render(this.scene, this.camera);
@@ -109,10 +117,11 @@ export class DelayGraphic extends LitElement {
             if (this.mouseState === 'idle'){
                 const rect = this.container.getBoundingClientRect();
                 const isLeft = (e.clientX - rect.left) < this.width / 2;
-                const r = 10;
+                const r = 4;
                 this.sx.set((isLeft ? -1 : 1) * r * 0.5);
                 this.sy.set(-r * 0.5);
                 this.sz.set(-r * -0.7);
+                this.sCamera.set(1.5);
             }
 
             if (this.mouseState === 'dragL' || this.mouseState === 'dragR') {
@@ -141,6 +150,7 @@ export class DelayGraphic extends LitElement {
             this.sx.set(0);
             this.sy.set(0);
             this.sz.set(r);
+            this.sCamera.set(1.15);
         };
 
         this.onMouseUp = (e) => {
@@ -245,7 +255,7 @@ export class DelayGraphic extends LitElement {
                     endAngle,
                     segmentCount,
                     radiusSmooth,
-                    opacitySmooth: new Smoothening(0.05, tapStates[tap] === 1 ? 1 : 0)
+                    opacitySmooth: new Smoothening(0.05, tapStates[tap] === 1 ? 1 : 0, 0.15)
                 });
                 this.scene.add(arc);
             }
@@ -275,6 +285,7 @@ export class DelayGraphic extends LitElement {
         this.updateArcs();
 
         this.camera.position.set(this.sx.get(), this.sy.get(), this.sz.get());
+        this.setCameraFrustum(this.sCamera.get());
         this.camera.lookAt(0, 0, 0);
 
         this.renderer.render(this.scene, this.camera);

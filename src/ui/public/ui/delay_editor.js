@@ -2,6 +2,7 @@ import { LitElement, html, css } from 'lit';
 import "./ui/pictSlider.js"
 import "./ui/button.js"
 import "./delay_graphic.js"
+import { color } from './drawings.js';
 import "./ui/utility.js"
 
 import { drawLock, drawSkew, drawPosition } from './drawings.js';
@@ -31,7 +32,7 @@ export class DelayEditor extends LitElement {
 
         label {
             margin: 0;
-            font-size: 14px;
+            font-size: 12px;
             font-family: Verdana;
             color: #696969;
         }
@@ -54,7 +55,8 @@ export class DelayEditor extends LitElement {
                             --numbox-width: 150px; 
                             --numbox-height: 31px; 
                             --numbox-font-size: 30px; 
-                            --numbox-color: white; 
+                            --numbox-color: ${color.lighttan}; 
+                            --numbox-font: Helvetica;
                             --numbox-align: left">
                     </petal-num-slider>
                     <petal-num-slider juceID="syncTimeL" 
@@ -64,7 +66,8 @@ export class DelayEditor extends LitElement {
                             --numbox-width: 150px; 
                             --numbox-height: 31px; 
                             --numbox-font-size: 30px; 
-                            --numbox-color: white; 
+                            --numbox-color: ${color.lighttan}; 
+                            --numbox-font: Helvetica;
                             --numbox-align: left">
                     </petal-num-slider>
                 </div>
@@ -84,11 +87,12 @@ export class DelayEditor extends LitElement {
                     <petal-num-slider juceID="${this.isStereoLock ? "freeTimeL" : "freeTimeR"}"
                         suffix=" ms"
                         min="5" max="500"
-                        style=" display: ${!this.isSyncR ? 'block' : 'none'}; 
+                        style="display: ${!this.isSyncR ? 'block' : 'none'}; 
                             --numbox-width: 150px; 
                             --numbox-height: 31px; 
                             --numbox-font-size: 30px; 
-                            --numbox-color: white; 
+                            --numbox-color: ${color.lighttan}; 
+                            --numbox-font: Helvetica;
                             --numbox-align: right;
                             --text-align: right">
                     </petal-num-slider>
@@ -98,7 +102,8 @@ export class DelayEditor extends LitElement {
                             --numbox-width: 150px; 
                             --numbox-height: 31px; 
                             --numbox-font-size: 30px; 
-                            --numbox-color: white; 
+                            --numbox-color: ${color.lighttan}; 
+                            --numbox-font: Helvetica;
                             --numbox-align: right;
                             --text-align: right">
                     </petal-num-slider>

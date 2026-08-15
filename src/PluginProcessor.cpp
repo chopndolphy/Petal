@@ -152,11 +152,7 @@ void PetalAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
                                  params->lfoAmount->getSmooth(), // lfo amount
 
                                  params->filterCutoff->getSmooth(), // filter cutoff
-                                 params->filterQ->getSmooth(),      // filter q
-                                 params->filterShape->getSmooth(),  // filter shape
-
-                                 params->delayDuckAmt->getSmooth(),
-                                 params->delayDuckLen->getSmooth());
+                                 params->filterShape->getSmooth());  // filter shape
 
     petal.rvb.setReverbAttributes(params->reverbLevel->getSmooth(),
                                   params->reverbDecayTime->getSmooth(),

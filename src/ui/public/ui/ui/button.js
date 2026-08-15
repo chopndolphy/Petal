@@ -18,7 +18,7 @@ export class PetalButton extends LitElement {
             text-align: var(--button-align, center);
             color: var(--button-color, #6c6c6c);
             font-family: var(--button-font, "Verdana");
-            font-size: var(--button-font-size, 14px);
+            font-size: var(--button-font-size, 12px);
             width: var(--button-width, 200px);
             height: var(--button-height, 30px);
             padding: 0;

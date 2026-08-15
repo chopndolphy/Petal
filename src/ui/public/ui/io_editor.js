@@ -4,8 +4,8 @@ import "./ui/button.js"
 import "./ui/utility.js"
 import './preset_editor.js'
 import { color } from './drawings.js';
-
-import { drawFeedback, drawDial } from './drawings.js';
+import { getSliderState } from '../juce.js';
+import { drawFilterGraph, drawModDisplay ,drawSlider } from './drawings.js';
 
 export class IOEditor extends LitElement {
     static styles = css`
@@ -31,7 +31,7 @@ export class IOEditor extends LitElement {
 
         label {
             margin: 0;
-            font-size: 14px;
+            font-size: 12px;
             font-family: Verdana;
             color: #696969;
         }
@@ -53,11 +53,6 @@ export class IOEditor extends LitElement {
             color: white;
         }
 
-        /* grouped row: N params side by side (Cutoff/Q/Shape, Amount/Release).
-           Each pair sizes to its own content (not an equal fr share of the
-           full row) and the whole cluster is right-aligned, so pairs sit
-           close together and the last slider still lands on the same right
-           edge as the single-param rows above/below it. */
         .group-row {
             display: flex;
             justify-content: flex-end;
@@ -66,14 +61,9 @@ export class IOEditor extends LitElement {
         }
 
         .group-row .row {
-            flex: 0 0 auto;
             grid-template-columns: auto var(--control-col);
-        }
+            justify-content: space-evenly
 
-        /* modifier: left-justify the cluster instead of right-justifying it
-           (used by Modulation / Ducking, not Input Filtering) */
-        .group-row.align-left {
-            justify-content: flex-start;
         }
 
         petal-num-slider {
@@ -85,6 +75,68 @@ export class IOEditor extends LitElement {
         super();
     }
 
+    firstUpdated(){
+        this.filterCutoff = getSliderState("filterCutoff");
+        this.filterShape = getSliderState("filterShape");
+        this.lfoRate = getSliderState("lfoRate");
+        this.lfoAmount = getSliderState("lfoAmount");
+
+        this.redrawFilterGraph = this.redrawFilterGraph.bind(this);
+        this.redrawModDisplay = this.redrawModDisplay.bind(this);
+
+        this.filterCanvas = this.renderRoot.querySelector('#filterGraph');
+        this.filterResizeObserver = new ResizeObserver((entries) => {
+            const { width, height } = entries[0].contentRect;
+            const dpr = window.devicePixelRatio || 1;
+            this.filterCanvas.width = Math.round(width * dpr);
+            this.filterCanvas.height = Math.round(height * dpr);
+            this.redrawFilterGraph();
+        });
+
+        this.modCanvas = this.renderRoot.querySelector('#modGraph');
+        this.modResizeObserver = new ResizeObserver((entries) => {
+            const { width, height } = entries[0].contentRect;
+            const dpr = window.devicePixelRatio || 1;
+            this.modCanvas.width = Math.round(width * dpr);
+            this.modCanvas.height = Math.round(height * dpr);
+            this.redrawModDisplay();
+        });
+        
+        this.filterResizeObserver.observe(this.filterCanvas);
+        this.modResizeObserver.observe(this.modCanvas);
+
+        this.filterCutoff.valueChangedEvent.addListener(this.redrawFilterGraph);
+        this.filterShape.valueChangedEvent.addListener(this.redrawFilterGraph);
+        this.lfoRate.valueChangedEvent.addListener(this.redrawModDisplay);
+        this.lfoAmount.valueChangedEvent.addListener(this.redrawModDisplay);
+    }
+
+    disconnectedCallback(){
+        super.disconnectedCallback();
+        this.filterResizeObserver?.disconnect();
+        this.modResizeObserver?.disconnect();
+    }
+
+    redrawFilterGraph(){
+        if (this.filterCanvas){
+            drawFilterGraph(this.filterCanvas,
+                this.filterCutoff.getNormalisedValue(),
+                this.filterShape.getNormalisedValue()
+            );
+        }
+    }
+
+    redrawModDisplay() {
+        if (this.modCanvas) {
+            drawModDisplay(this.modCanvas,
+                this.lfoRate.getNormalisedValue(),
+                this.lfoAmount.getNormalisedValue()
+            );
+        }
+    }
+
+    
+
     render() {
         return html`
         <div class="panel">
@@ -92,76 +144,75 @@ export class IOEditor extends LitElement {
             <!-- preset editors -->
             <preset-editor></preset-editor>
 
-            <div class="row">
-                <label>Input Level</label>
-                <petal-num-slider juceID="inputLevel" suffix=" dB" mode="db" style="--numbox-align: right"></petal-num-slider>
-            </div>
+            <!-- filter controls -->
+            <div style="display: flex; flex-direction: row; justify-content: space-between">
+                <div style="display: flex; flex-direction: column; justify-content: space-around; align-items: left" >
+                    <label style="color: ${ color.lighttan }">Input Filtering</label>
+                    <div style="display: flex; flex-direction: row">
+                        <label>Cutoff</label>
+                        <petal-num-slider juceID="filterCutoff" mode="rate"  style="--numbox-align: right"></petal-num-slider>
+                    </div>
 
-            <div>
-                <label class="section-label">Input Filtering</label>
-                <div class="group-row">
-                    <div class="row">
-                        <label style="color: grey">Cutoff</label>
-                        <petal-num-slider juceID="filterCutoff" suffix=" %" mode="rate" style="--numbox-align: right"></petal-num-slider>
-                    </div>
-                    <div class="row">
-                        <label style="color: grey">Q</label>
-                        <petal-num-slider juceID="filterQ" suffix=" %" style="--numbox-align: right"></petal-num-slider>
-                    </div>
-                    <div class="row">
-                        <label style="color: grey">Shape</label>
-                        <petal-num-slider juceID="filterShape" suffix=" %" style="--numbox-align: right"></petal-num-slider>
+                    <div style="display: flex; flex-direction: row">
+                        <label>Shape</label>
+                        <petal-num-slider juceID="filterShape" suffix=" %"  style="--numbox-align: right"></petal-num-slider>
                     </div>
                 </div>
+                <canvas id="filterGraph" width="200" height="75" style="width: 200px; height: 75px;"></canvas>
             </div>
 
-            <div>
-                <label class="section-label">Modulation</label>
-                <div class="group-row align-left">
-                    <div class="row">
-                        <label style="color: grey">Rate</label>
-                        <petal-num-slider juceID="lfoRate" suffix=" Hz" style="--numbox-align: right"></petal-num-slider>
+            <!-- modulation controls -->
+            <div style="display: flex; flex-direction: row; justify-content: space-between">
+                <div style="display: flex; flex-direction: column; justify-content: space-around; align-items: left" >
+                    <label style="color: ${ color.lighttan }">Modulation</label>
+                    <div style="display: flex; flex-direction: row">
+                        <label>Rate</label>
+                        <petal-num-slider juceID="lfoRate" suffix=" %" mode="rate" style="--numbox-align: right"></petal-num-slider>
                     </div>
-                    <div class="row">
-                        <label style="color: grey">Amount</label>
+
+                    <div style="display: flex; flex-direction: row">
+                        <label>Amount</label>
                         <petal-num-slider juceID="lfoAmount" suffix=" %" style="--numbox-align: right"></petal-num-slider>
                     </div>
                 </div>
+                <canvas id="modGraph" width="200" height="75" style="width: 200px; height: 75px"></canvas>
             </div>
 
-            <div class="row">
-                <label>Window Size</label>
-                <petal-num-slider juceID="windowSize" suffix=" Hz" mode="rate" style="--numbox-align: right"></petal-num-slider>
+            <!-- window size -->
+            <div style="display: flex; flex-direction: row; justify-content: space-between">
+                <label style="color: ${ color.lighttan }">Window Size</label>
+                <petal-num-slider juceID="windowSize" suffix=" ms" style="--numbox-align: right"></petal-num-slider>
             </div>
 
-            <div>
-                <label class="section-label">Ducking</label>
-                <div class="group-row align-left">
-                    <div class="row">
-                        <label style="color: grey">Amount</label>
-                        <petal-num-slider juceID="delayDuckAmt" suffix=" %" style="--numbox-align: right"></petal-num-slider>
+
+
+            <!-- volume controls -->
+                <label style="color: ${ color.lighttan }">Levels</label>
+                <div style="display: flex; flex-direction: row; justify-content: space-between">
+                    <div style="display: flex; flex-direction: column; align-items: center">
+                        <label>Input</label>
+                        <petal-pict-slider juceID="inputLevel" .drawing="${drawSlider}" style="--slider-height: 80px; --slider-width: 45px"></petal-pict-slider>
+                        <petal-num-slider juceID="inputLevel" suffix=" dB" mode="db" style="--numbox-align: center"></petal-num-slider>
                     </div>
-                    <div class="row">
-                        <label style="color: grey">Release</label>
-                        <petal-num-slider juceID="delayDuckLen" suffix=" %" style="--numbox-align: right"></petal-num-slider>
+
+                    <div style="display: flex; flex-direction: column; align-items: center">
+                        <label>Delay</label>
+                        <petal-pict-slider juceID="delayLevel" .drawing="${drawSlider}" style="--slider-height: 80px; --slider-width: 45px"></petal-pict-slider>
+                        <petal-num-slider juceID="delayLevel" suffix=" dB" mode="db" style="--numbox-align: center"></petal-num-slider>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; align-items: center">
+                        <label>Reverb</label>
+                        <petal-pict-slider juceID="reverbLevel" .drawing="${drawSlider}" style="--slider-height: 80px; --slider-width: 45px"></petal-pict-slider>
+                        <petal-num-slider juceID="reverbLevel" suffix=" dB" mode="db" style="--numbox-align: center"></petal-num-slider>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; align-items: center">
+                        <label>Dry</label>
+                        <petal-pict-slider juceID="dryLevel" .drawing="${drawSlider}" style="--slider-height: 80px; --slider-width: 45px"></petal-pict-slider>
+                        <petal-num-slider juceID="dryLevel" suffix=" dB" mode="db" style="--numbox-align: center"></petal-num-slider>
                     </div>
                 </div>
-            </div>
-
-            <div class="row">
-                <label>Delay Level</label>
-                <petal-num-slider juceID="delayLevel" suffix=" dB" mode="db" style="--numbox-align: right"></petal-num-slider>
-            </div>
-
-            <div class="row">
-                <label>Reverb Level</label>
-                <petal-num-slider juceID="reverbLevel" suffix=" dB" mode="db" style="--numbox-align: right"></petal-num-slider>
-            </div>
-
-            <div class="row">
-                <label>Dry Level</label>
-                <petal-num-slider juceID="dryLevel" suffix=" dB" mode="db" style="--numbox-align: right"></petal-num-slider>
-            </div>
         </div>
         `
     }

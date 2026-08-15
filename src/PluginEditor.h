@@ -37,15 +37,15 @@ private:
         skewRRelay{"skewR"},
         roundRelay{"round"},
 
+        feedbackAmtRelay{"feedbackAmt"},
+        feedbackLenRelay{"feedbackLen"},
+
         delayLevelRelay{"delayLevel"},
         windowSizeRelay{"windowSize"},
 
         filterCutoffRelay{"filterCutoff"},
-        filterQRelay{"filterQ"},
         filterShapeRelay{"filterShape"},
 
-        delayDuckAmtRelay{"delayDuckAmt"},
-        delayDuckLenRelay{"delayDuckLen"},
         lfoRateRelay{"lfoRate"},
         lfoAmountRelay{"lfoAmount"},
 
@@ -82,10 +82,10 @@ private:
                                .withOptionsFrom(delayLevelRelay)
                                .withOptionsFrom(windowSizeRelay)
 
-                               .withOptionsFrom(delayDuckAmtRelay)
-                               .withOptionsFrom(delayDuckLenRelay)
+                               .withOptionsFrom(feedbackAmtRelay)
+                               .withOptionsFrom(feedbackLenRelay)
+
                                .withOptionsFrom(filterCutoffRelay)
-                               .withOptionsFrom(filterQRelay)
                                .withOptionsFrom(filterShapeRelay)
                                .withOptionsFrom(lfoRateRelay)
                                .withOptionsFrom(lfoAmountRelay)
@@ -141,13 +141,11 @@ private:
     WebSliderParameterAttachment windowSizeAttachment { *audioProcessor.params->windowSize->getRangedAudioParameter(), windowSizeRelay, nullptr };
     WebSliderParameterAttachment delayLevelAttachment{*audioProcessor.params->delayLevel->getRangedAudioParameter(), delayLevelRelay, nullptr};
 
+    WebSliderParameterAttachment feedbackAmtAttachment{*audioProcessor.params->feedbackAmt->getRangedAudioParameter(), feedbackAmtRelay, nullptr};
+    WebSliderParameterAttachment feedbackLenAttachment{*audioProcessor.params->feedbackLen->getRangedAudioParameter(), feedbackLenRelay, nullptr};
 
     WebSliderParameterAttachment filterCutoffAttachment{*audioProcessor.params->filterCutoff->getRangedAudioParameter(), filterCutoffRelay, nullptr};
-    WebSliderParameterAttachment filterQAttachment{*audioProcessor.params->filterQ->getRangedAudioParameter(), filterQRelay, nullptr};
     WebSliderParameterAttachment filterShapeAttachment{*audioProcessor.params->filterShape->getRangedAudioParameter(), filterShapeRelay, nullptr};
-
-    WebSliderParameterAttachment delayDuckAmtAttachment{*audioProcessor.params->delayDuckAmt->getRangedAudioParameter(), delayDuckAmtRelay, nullptr};
-    WebSliderParameterAttachment delayDuckLenAttachment{*audioProcessor.params->delayDuckLen->getRangedAudioParameter(), delayDuckLenRelay, nullptr};
 
     WebSliderParameterAttachment lfoRateAttachment{*audioProcessor.params->lfoRate->getRangedAudioParameter(), lfoRateRelay, nullptr};
     WebSliderParameterAttachment lfoAmountAttachment{*audioProcessor.params->lfoAmount->getRangedAudioParameter(), lfoAmountRelay, nullptr};

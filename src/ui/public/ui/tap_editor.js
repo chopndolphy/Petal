@@ -33,7 +33,7 @@ export class TapEditorInstance extends LitElement {
         }
 
         p {
-            font-size: 14px;
+            font-size: 12px;
             font-family: Verdana;
             color: #696969;
         }
@@ -90,7 +90,8 @@ export class TapEditorInstance extends LitElement {
 
                 <petal-num-slider juceID="tapReverbAmt${this.tapIndex}"
                     suffix=" %"
-                    style="--numbox-align: center; --text-align: center;
+                    style="--numbox-align: center; 
+                    --text-align: center;
                     --color: ${lerpColor(color.pink, color.orange, 0.125 * this.tapIndex)};">
                 </petal-num-slider>
 
@@ -118,10 +119,8 @@ export class TapEditor extends LitElement {
     }
     
     static styles = css`
-        
-
-        p {
-            font-size: 14px;
+        label {
+            font-size: 12px;
             font-family: Verdana;
             color: #696969;
             margin: 0px;
@@ -137,22 +136,21 @@ export class TapEditor extends LitElement {
         const instances = []
 
         return html`
-    <div style="display: flex; flex-direction: column; justify-content: space-evenly; height: 100%; width: 85%; margin: auto">
+    <div style="display: flex; flex-direction: column; justify-content: space-around; height: 100%; width: 85%; margin: auto">
         <!-- top controls -->
-        <div style="display: flex; flex-direction: column; justify-content: space-between; height: 10%">
-            <div style="display: flex; flex-direction: row; justify-content: space-between">
-                <p>Feedback</p>
-                <petal-num-slider juceID="feedbackAmt"
-                    min="5" max="200" suffix=" %"
-                    style="--numbox-width: 100px;
-                    --numbox-font-size: 14px;
-                    --numbox-align: right">
-                </petal-num-slider>
-            </div>
+        <div style="display: flex; flex-direction: row; justify-content: space-around; align-items: center">
+            <label>Feedback</label>
+            <petal-num-slider juceID="feedbackAmt" suffix=" %"
+                style="--numbox-align: center; --text-align: center" >
+            </petal-num-slider>
+            <label>Length</label>
+            <petal-num-slider juceID="feedbackLen" suffix="" mode="int"
+                style="--numbox-align: center; --text-align: center" >
+            </petal-num-slider>
         </div>
 
         <!-- tap instances -->
-        <div style="display: flex; flex-direction: row; justify-content: space-between; height: 75%">
+        <div style="display: flex; flex-direction: row; justify-content: space-between; height: 80%">
             <div style="display: flex; flex-direction: column; justify-content: space-between;">
                 <tap-instance style="width: 150px" .isPitch=${this.isPitch} tapIndex=0></tap-instance>
                 <tap-instance .isPitch=${this.isPitch} tapIndex=2></tap-instance>

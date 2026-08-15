@@ -178,7 +178,7 @@ export class PetalNumSlider extends PetalSliderBase {
             color: var(--numbox-color, #aaaaaa);
             font-family: var(--numbox-font, "Verdana");
             font-size: var(--numbox-font-size, 12px);
-            width: var(--numbox-width, 75px);
+            width: var(--numbox-width, 60px);
             height: var(--numbox-height, 13px);
             cursor: ns-resize;
         }
@@ -383,7 +383,7 @@ export class PetalNumSlider extends PetalSliderBase {
 
     formatRate(hz) {
         if (hz < 1000) return `${hz.toFixed(1)} Hz`;
-        return `${(hz / 1000).toFixed(2)} kHz`;
+        return `${(hz / 1000).toFixed(1)} kHz`;
     }
 
     render() {
@@ -425,8 +425,21 @@ export class PetalPictSlider extends PetalSliderBase {
     firstUpdated() {
         this.canvas = this.shadowRoot.querySelector('canvas');
 
+        // display:none ancestors (hidden tabs) never get a layout box, so
+        // ResizeObserver won't fire until the tab is shown; size from computed
+        // style (a definite length, resolvable even while hidden) so it paints immediately.
+        const dpr = window.devicePixelRatio || 1;
+        const cs = getComputedStyle(this.canvas);
+        this.w = parseFloat(cs.width) || this.canvas.clientWidth;
+        this.h = parseFloat(cs.height) || this.canvas.clientHeight;
+        this.canvas.width = Math.round(this.w * dpr);
+        this.canvas.height = Math.round(this.h * dpr);
+
         this.resizeObserver = new ResizeObserver((entries) => {
             const { width, height } = entries[0].contentRect;
+            // display:none reports a 0x0 rect the moment observe() is called;
+            // ignore it so it doesn't clobber the computed-style sizing above.
+            if (width === 0 || height === 0) return;
             const dpr = window.devicePixelRatio || 1;
 
             this.canvas.width = Math.round(width * dpr);
